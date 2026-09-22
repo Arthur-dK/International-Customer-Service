@@ -1,5 +1,5 @@
 # Optional / local IVR language-ID stack.
-# Render Docker and requirements-render.txt install this automatically.
+# Docker / requirements-linux.txt install this automatically.
 # Local Windows:
 #   .\venv\Scripts\python.exe -m pip install -r requirements-ivr-lid.txt
 #

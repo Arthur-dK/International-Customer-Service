@@ -2,7 +2,7 @@
 
 What each application, data, and test file in this repository does. SMS and email routers exist as placeholders; the implemented path is multi-lingual IVR over Twilio Voice plus a media-stream WebSocket.
 
-Related design notes live under `docs/adr/` and `docs/features/`. This page is a file map, not an architecture decision record.
+Related design notes live under `docs/software-engineering/`. Hosting: `docs/deploy-vps.md`. This page is a file map, not an architecture decision record.
 
 ---
 
@@ -13,7 +13,7 @@ Related design notes live under `docs/adr/` and `docs/features/`. This page is a
 | `app/main.py` | Creates the FastAPI app, attaches health/IVR/SMS/email routers, and on startup warms TTS, phrase audio, and language ID without blocking `/health`. |
 | `app/deps.py` | Shared constructors for TTS, streaming STT/TTS, phrase cache, VAD config, and SpeechBrain (or fallback) language ID. |
 | `app/api/__init__.py` | Empty package marker for API routers. |
-| `app/api/health.py` | `GET /health` — liveness JSON used by Render and local checks. |
+| `app/api/health.py` | `GET /health` — liveness JSON used by Docker Compose and local checks. |
 | `app/api/ivr.py` | Twilio `POST /voice/incoming` (TwiML that opens a media stream) and `WebSocket /media-stream` (inbound μ-law, DTMF, language selection, then placeholder task turns). |
 | `app/api/sms.py` | Empty `/sms` router for the future multi-lingual SMS channel. |
 | `app/api/email.py` | Empty `/email` router for the future translator / classifier / auto-reply channel. |
@@ -47,7 +47,7 @@ Related design notes live under `docs/adr/` and `docs/features/`. This page is a
 | `services/ivr/vad.py` | Energy VAD: sustained RMS → `speech_start`, hangover silence → `speech_end` with buffered PCM. |
 | `services/ivr/tts_lang.py` | Normalizes ISO language tags, aliases (e.g. `cmn` → `zh`), and Piper voice path maps. |
 | `services/ivr/tts.py` | Batch TTS: tone stub, Windows SAPI, optional Piper, caching, language-matched routing, prompt warmup. |
-| `services/ivr/edge_tts.py` | Microsoft Edge neural TTS for Linux/Render; MP3 → μ-law. Used when SAPI/Piper are not available. |
+| `services/ivr/edge_tts.py` | Microsoft Edge neural TTS for Linux/VPS; MP3 → μ-law. Used when SAPI/Piper are not available. |
 | `services/ivr/lid.py` | Spoken language ID: SpeechBrain VoxLingua107, remapping lookalikes to major languages, or a fixed-language stub. |
 | `services/ivr/language_selection.py` | Call-start state machine: country-aware prompt, listen, LID, DTMF menu, barge-in; runs entirely on media-stream queues. |
 | `services/ivr/metrics.py` | Dataclass of language-selection metrics for logs and tests. |
@@ -96,7 +96,7 @@ Related design notes live under `docs/adr/` and `docs/features/`. This page is a
 
 ## Manual IVR scripts
 
-Runnable from the repo root (not collected as the default pytest suite). They exercise live Windows/Render-shaped stacks or a fake Twilio client.
+Runnable from the repo root (not collected as the default pytest suite). They exercise live Windows/Linux-shaped stacks or a fake Twilio client.
 
 | File | What it does |
 |------|----------------|

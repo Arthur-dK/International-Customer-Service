@@ -1,4 +1,4 @@
-"""Microsoft Edge neural TTS for Linux/Render (no Windows SAPI).
+"""Microsoft Edge neural TTS for Linux/VPS (no Windows SAPI).
 
 Uses the public Edge read-aloud endpoint via the ``edge-tts`` package. Audio is
 MP3; ``miniaudio`` decodes to PCM so we do not need ffmpeg. First synth is a
@@ -47,7 +47,7 @@ def edge_tts_available() -> bool:
 
 
 class EdgeTextToSpeech:
-    """Spoken TTS for hosts without SAPI/Piper (Render Linux). Needs outbound HTTPS."""
+    """Spoken TTS for hosts without SAPI/Piper (Linux). Needs outbound HTTPS."""
 
     def supports_language(self, language: str) -> bool:
         return normalize_language(language) in EDGE_VOICES

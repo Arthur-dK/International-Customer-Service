@@ -93,7 +93,7 @@ def build_default_streaming_stt(
     *,
     backend: str | None = None,
 ) -> StreamingSpeechToText:
-    """``sapi`` uses Windows grammar STT. Linux/Render always uses the scripted stub."""
+    """``sapi`` uses Windows grammar STT. Linux/VPS always uses the scripted stub."""
     script = list(finals if finals is not None else ())
     kind = (backend or "scripted").strip().lower()
     if kind == "sapi" and not sys.platform.startswith("win"):
