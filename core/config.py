@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     IVR_PIPER_BIN: str | None = None
     IVR_PIPER_VOICES: str | None = None
     IVR_PIPER_VOICE_DIR: str | None = None
-    # None = on when not Windows (Render). True/false to force. Needs outbound HTTPS.
+    # None = on when not Windows (Linux/VPS). True/false to force. Needs outbound HTTPS.
     IVR_USE_EDGE_TTS: bool | None = None
 
     # IVR language ID — prefer SpeechBrain when installed; fixed LID remains fallback

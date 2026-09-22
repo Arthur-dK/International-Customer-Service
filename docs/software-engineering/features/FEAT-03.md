@@ -38,7 +38,7 @@ What this feature **does not** do: understand full-sentence paraphrases, Hebrew/
 - **Languages:** design for every language the future LLM would understand; **this branch tests English + 1–2 others**. Remaining voices last.
 - **No “one moment…” filler** this branch.
 - **Proof:** pytest with fake engines (CI) **and** a live Twilio listen-check when the pipeline is wired.
-- **Render:** Python 3.12 + `requirements-render.txt` (SpeechBrain CPU). See [deploy-render.md](../deploy-render.md). Windows SAPI STT is not used on Linux.
+- **Linux/VPS:** Python 3.12 + `requirements-linux.txt` (SpeechBrain CPU). See [deploy-vps.md](../../deploy-vps.md). Windows SAPI STT is not used on Linux.
 - **Optimize for a fast demo**, with notes below on what a more private/production path would change.
 
 ## What “0.5 seconds” means

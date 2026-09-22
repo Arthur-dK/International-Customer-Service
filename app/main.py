@@ -51,7 +51,7 @@ async def lifespan(_app: FastAPI):
         except Exception:
             log.exception("IVR LID warmup failed; first call may be slow")
 
-    # Do not block /health on Edge TTS or Hugging Face (Render health checks).
+    # Do not block /health on Edge TTS or Hugging Face (load balancers / compose).
     warmup_tasks = (
         asyncio.create_task(_warm_audio()),
         asyncio.create_task(_warm_lid()),

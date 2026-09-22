@@ -269,7 +269,7 @@ class SpeechBrainLanguageIdentifier:
             except ImportError as exc:  # pragma: no cover - optional dependency
                 raise RuntimeError(
                     "speechbrain is not installed. Install optional IVR LID deps "
-                    "(requirements-ivr-lid.txt or requirements-render.txt)."
+                    "(requirements-ivr-lid.txt or requirements-linux.txt)."
                 ) from exc
 
             try:
@@ -397,7 +397,7 @@ def build_default_lid(
 
     logger.warning(
         "Using fixed English LID because SpeechBrain is disabled. "
-        "Set IVR_USE_SPEECHBRAIN_LID=true on Render."
+        "Set IVR_USE_SPEECHBRAIN_LID=true on the Linux/VPS deploy."
     )
     return FixedLanguageIdentifier(language="en", confidence=0.99, backend="fixed-fallback")
 
