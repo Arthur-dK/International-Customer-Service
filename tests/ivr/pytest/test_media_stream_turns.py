@@ -62,6 +62,7 @@ def test_media_stream_placeholder_turn_after_language_selection(tmp_path, monkey
     monkeypatch.setattr("app.api.ivr.settings.IVR_SILENCE_TIMEOUT_S", 0.3)
     monkeypatch.setattr("app.api.ivr.settings.IVR_PLAYBACK_REALTIME", False)
     monkeypatch.setattr("app.api.ivr.settings.IVR_MIN_LID_CONFIDENCE", 0.1)
+    monkeypatch.setattr("app.api.ivr.settings.IVR_MIN_LID_UTTERANCE_MS", 0.0)
 
     clear_last_language_selection()
     clear_last_turns()

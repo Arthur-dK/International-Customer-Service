@@ -164,6 +164,8 @@ async def twilio_media_stream(websocket: WebSocket):
                 lid=get_lid(),
                 silence_timeout_s=settings.IVR_SILENCE_TIMEOUT_S,
                 min_lid_confidence=settings.IVR_MIN_LID_CONFIDENCE,
+                off_menu_min_lid_confidence=settings.IVR_OFF_MENU_LID_CONFIDENCE,
+                min_utterance_ms=settings.IVR_MIN_LID_UTTERANCE_MS,
                 vad_config=get_vad_config(),
                 playback_realtime=settings.IVR_PLAYBACK_REALTIME,
             )
