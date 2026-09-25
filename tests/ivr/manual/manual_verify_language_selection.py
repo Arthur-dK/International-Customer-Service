@@ -53,6 +53,7 @@ def _selector(lid_language: str) -> LanguageSelector:
         lid=FixedLanguageIdentifier(language=lid_language, confidence=0.95),
         silence_timeout_s=0.25,
         min_lid_confidence=0.1,
+        min_utterance_ms=0.0,
         vad_config=VadConfig(rms_threshold=500, speech_start_ms=40, speech_end_ms=60),
         playback_realtime=False,
         max_dtmf_rounds=3,
@@ -70,7 +71,7 @@ async def _run_scenario(scenario: str) -> int:
 
         async def feed():
             await _wait_for_outbound(outbound)
-            await asyncio.sleep(0.05)
+            await asyncio.sleep(0.2)
             await _feed_speech(inbound)
 
         expect_method = "speech"

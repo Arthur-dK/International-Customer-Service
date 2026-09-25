@@ -18,7 +18,7 @@ from core.language import (
     resolve_caller_locale,
 )
 from services.ivr.audio import TWILIO_SAMPLE_RATE, chunk_mulaw
-from services.ivr.lid import LanguageIdentifier
+from services.ivr.lid import MAJOR_LID_LANGUAGES, LanguageIdentifier
 from services.ivr.metrics import LanguageSelectionMetrics
 from services.ivr.tts import TextToSpeech, ToneTextToSpeech
 from services.ivr.vad import EnergyVad, VadConfig
@@ -48,8 +48,9 @@ class LanguageSelector:
     """
     Run language selection entirely on media-stream queues (no Twilio TwiML Gather).
 
-    Known country: prompt in top language → listen → speech LID or DTMF.
-    Unknown country: English → 5s → English again → DTMF.
+    Known country: prompt in top language → listen (6s) → speech LID or DTMF.
+    Unknown country: English → 6s → English again → DTMF.
+    Rejected utterances (noise / unknown LID) keep the same listen window.
     During DTMF menu playback/listen, speech barge-in selects immediately via LID.
     """
 
@@ -58,8 +59,10 @@ class LanguageSelector:
         tts: TextToSpeech,
         lid: LanguageIdentifier,
         *,
-        silence_timeout_s: float = 5.0,
+        silence_timeout_s: float = 6.0,
         min_lid_confidence: float = 0.15,
+        off_menu_min_lid_confidence: float = 0.5,
+        min_utterance_ms: float = 800.0,
         vad_config: VadConfig | None = None,
         outbound_chunk_ms: int = 20,
         playback_realtime: bool = True,
@@ -69,6 +72,8 @@ class LanguageSelector:
         self.lid = lid
         self.silence_timeout_s = silence_timeout_s
         self.min_lid_confidence = min_lid_confidence
+        self.off_menu_min_lid_confidence = off_menu_min_lid_confidence
+        self.min_utterance_ms = min_utterance_ms
         self.vad = EnergyVad(vad_config or VadConfig())
         self.outbound_chunk_ms = outbound_chunk_ms
         self.playback_realtime = playback_realtime
@@ -116,70 +121,132 @@ class LanguageSelector:
                             prompt_lang,
                         )
                     metrics.prompt_language = speak_lang
-                    await self._play_prompt(
+                    mulaw_len = await self._play_prompt(
                         text, speak_lang, outbound_audio, playback_cancel, metrics
                     )
+                    # Burst playback returns immediately while Twilio is still
+                    # speaking. Ignore VAD until that audio would have finished,
+                    # otherwise a throat-clear during the prompt becomes a LID hit.
+                    if not self.playback_realtime and mulaw_len > 0:
+                        hold_s = mulaw_len / float(TWILIO_SAMPLE_RATE)
+                        outcome = await self._listen_for_speech_or_timeout(
+                            inbound_audio=inbound_audio,
+                            outbound_audio=outbound_audio,
+                            dtmf_digits=dtmf_digits,
+                            stop_event=stop_event,
+                            allow_dtmf=True,
+                            allow_speech=False,
+                            metrics=metrics,
+                            first_speech_holder={"t": first_speech_at},
+                            timeout_s=hold_s,
+                        )
+                        first_speech_at = outcome.get("first_speech_at", first_speech_at)
+                        if outcome["kind"] == "stopped":
+                            metrics.outcome = "abandoned"
+                            metrics.total_selection_ms = (time.perf_counter() - started) * 1000.0
+                            return None
+                        if outcome["kind"] == "dtmf":
+                            language = language_from_dtmf_digit(outcome["digit"], locale.languages)
+                            if language:
+                                metrics.selected_language = language
+                                metrics.selection_method = "dtmf"
+                                metrics.dtmf_digit = outcome["digit"]
+                                metrics.outcome = "selected"
+                                metrics.total_selection_ms = (time.perf_counter() - started) * 1000.0
+                                _clear_twilio_playback(outbound_audio)
+                                return LanguageSelectionResult(
+                                    language=language,
+                                    method="dtmf",
+                                    metrics=metrics,
+                                    locale=locale,
+                                )
+                            logger.info(
+                                "Ignoring invalid DTMF digit during prompt: %s",
+                                outcome["digit"],
+                            )
                     _drain_queue(inbound_audio)
                     phase = SelectionPhase.LISTEN
                     continue
 
                 if phase == SelectionPhase.LISTEN:
-                    outcome = await self._listen_for_speech_or_timeout(
-                        inbound_audio=inbound_audio,
-                        outbound_audio=outbound_audio,
-                        dtmf_digits=dtmf_digits,
-                        stop_event=stop_event,
-                        allow_dtmf=True,
-                        metrics=metrics,
-                        first_speech_holder={"t": first_speech_at},
-                    )
-                    first_speech_at = outcome.get("first_speech_at", first_speech_at)
+                    listen_deadline = time.perf_counter() + self.silence_timeout_s
+                    listen_done = False
+                    while not stop_event.is_set() and not listen_done:
+                        remaining = listen_deadline - time.perf_counter()
+                        if remaining <= 0:
+                            metrics.silence_timeouts += 1
+                            phase = self._after_silence(locale, english_passes)
+                            listen_done = True
+                            continue
 
-                    if outcome["kind"] == "stopped":
-                        metrics.outcome = "abandoned"
-                        metrics.total_selection_ms = (time.perf_counter() - started) * 1000.0
-                        return None
-
-                    if outcome["kind"] == "speech":
-                        selected = await self._select_from_speech(
-                            outcome["pcm16"], metrics, method="speech"
+                        outcome = await self._listen_for_speech_or_timeout(
+                            inbound_audio=inbound_audio,
+                            outbound_audio=outbound_audio,
+                            dtmf_digits=dtmf_digits,
+                            stop_event=stop_event,
+                            allow_dtmf=True,
+                            metrics=metrics,
+                            first_speech_holder={"t": first_speech_at},
+                            timeout_s=remaining,
                         )
-                        if selected:
+                        first_speech_at = outcome.get("first_speech_at", first_speech_at)
+
+                        if outcome["kind"] == "stopped":
+                            metrics.outcome = "abandoned"
                             metrics.total_selection_ms = (time.perf_counter() - started) * 1000.0
-                            metrics.outcome = "selected"
-                            _clear_twilio_playback(outbound_audio)
-                            return LanguageSelectionResult(
-                                language=selected,
-                                method="speech",
-                                metrics=metrics,
-                                locale=locale,
+                            return None
+
+                        if outcome["kind"] == "speech":
+                            selected = await self._select_from_speech(
+                                outcome["pcm16"], metrics, locale, method="speech"
                             )
+                            if selected:
+                                metrics.total_selection_ms = (time.perf_counter() - started) * 1000.0
+                                metrics.outcome = "selected"
+                                _clear_twilio_playback(outbound_audio)
+                                return LanguageSelectionResult(
+                                    language=selected,
+                                    method="speech",
+                                    metrics=metrics,
+                                    locale=locale,
+                                )
+                            leftover = listen_deadline - time.perf_counter()
+                            logger.info(
+                                "Rejected utterance; still listening for %.2fs",
+                                max(0.0, leftover),
+                            )
+                            continue
+
+                        if outcome["kind"] == "dtmf":
+                            language = language_from_dtmf_digit(outcome["digit"], locale.languages)
+                            if language:
+                                metrics.selected_language = language
+                                metrics.selection_method = "dtmf"
+                                metrics.dtmf_digit = outcome["digit"]
+                                metrics.outcome = "selected"
+                                metrics.total_selection_ms = (time.perf_counter() - started) * 1000.0
+                                _clear_twilio_playback(outbound_audio)
+                                return LanguageSelectionResult(
+                                    language=language,
+                                    method="dtmf",
+                                    metrics=metrics,
+                                    locale=locale,
+                                )
+                            logger.info(
+                                "Ignoring invalid DTMF digit during listen: %s",
+                                outcome["digit"],
+                            )
+                            leftover = listen_deadline - time.perf_counter()
+                            if leftover > 0:
+                                continue
+                            metrics.silence_timeouts += 1
+                            phase = self._after_silence(locale, english_passes)
+                            listen_done = True
+                            continue
+
                         metrics.silence_timeouts += 1
                         phase = self._after_silence(locale, english_passes)
-                        continue
-
-                    if outcome["kind"] == "dtmf":
-                        language = language_from_dtmf_digit(outcome["digit"], locale.languages)
-                        if language:
-                            metrics.selected_language = language
-                            metrics.selection_method = "dtmf"
-                            metrics.dtmf_digit = outcome["digit"]
-                            metrics.outcome = "selected"
-                            metrics.total_selection_ms = (time.perf_counter() - started) * 1000.0
-                            _clear_twilio_playback(outbound_audio)
-                            return LanguageSelectionResult(
-                                language=language,
-                                method="dtmf",
-                                metrics=metrics,
-                                locale=locale,
-                            )
-                        logger.info("Ignoring invalid DTMF digit during listen: %s", outcome["digit"])
-                        metrics.silence_timeouts += 1
-                        phase = self._after_silence(locale, english_passes)
-                        continue
-
-                    metrics.silence_timeouts += 1
-                    phase = self._after_silence(locale, english_passes)
+                        listen_done = True
                     continue
 
                 if phase == SelectionPhase.DTMF_MENU:
@@ -237,7 +304,7 @@ class LanguageSelector:
                     if outcome["kind"] == "speech":
                         metrics.barge_in_during_dtmf = True
                         selected = await self._select_from_speech(
-                            outcome["pcm16"], metrics, method="speech_barge_in"
+                            outcome["pcm16"], metrics, locale, method="speech_barge_in"
                         )
                         if selected:
                             metrics.total_selection_ms = (time.perf_counter() - started) * 1000.0
@@ -352,9 +419,18 @@ class LanguageSelector:
         self,
         pcm16: bytes,
         metrics: LanguageSelectionMetrics,
+        locale: CallerLocale,
         method: str,
     ) -> str | None:
         metrics.speech_utterances += 1
+        duration_ms = _pcm16_duration_ms(pcm16)
+        if duration_ms < self.min_utterance_ms:
+            logger.info(
+                "Ignoring short LID utterance duration_ms=%.0f min_ms=%.0f",
+                duration_ms,
+                self.min_utterance_ms,
+            )
+            return None
         result = await self.lid.identify(pcm16)
         if result is None:
             return None
@@ -362,11 +438,18 @@ class LanguageSelector:
         metrics.lid_language = result.language
         metrics.lid_confidence = result.confidence
         metrics.lid_latency_ms = result.latency_ms
-        if result.confidence < self.min_lid_confidence:
+        if not lid_language_acceptable(
+            result.language,
+            result.confidence,
+            locale.languages,
+            min_confidence=self.min_lid_confidence,
+            off_menu_min_confidence=self.off_menu_min_lid_confidence,
+        ):
             logger.info(
-                "LID confidence too low: lang=%s confidence=%.3f",
+                "Rejecting LID lang=%s confidence=%.3f menu=%s",
                 result.language,
                 result.confidence,
+                list(locale.languages),
             )
             return None
         metrics.selected_language = result.language
@@ -434,6 +517,7 @@ class LanguageSelector:
         dtmf_digits: asyncio.Queue[str],
         stop_event: asyncio.Event,
         allow_dtmf: bool,
+        allow_speech: bool = True,
         metrics: LanguageSelectionMetrics,
         first_speech_holder: dict[str, float | None],
         timeout_s: float | None = None,
@@ -493,6 +577,8 @@ class LanguageSelector:
                 }
 
             chunk = finished.result()
+            if not allow_speech:
+                continue
             events = self.vad.process_mulaw(chunk)
             for event in events:
                 if event.kind == "speech_start":
@@ -540,3 +626,34 @@ def _drain_queue(queue: asyncio.Queue) -> int:
     if drained:
         logger.info("Drained %s queued inbound audio frames before listen", drained)
     return drained
+
+
+def _pcm16_duration_ms(pcm16: bytes) -> float:
+    if not pcm16:
+        return 0.0
+    return (len(pcm16) / 2.0) / TWILIO_SAMPLE_RATE * 1000.0
+
+
+def lid_language_acceptable(
+    language: str,
+    confidence: float,
+    menu_languages: tuple[str, ...] | list[str],
+    *,
+    min_confidence: float,
+    off_menu_min_confidence: float,
+) -> bool:
+    """
+    Accept in-menu languages at min_confidence.
+
+    Off-menu results must be a major language (en/fr/…) and beat a higher bar.
+    Random VoxLingua107 labels (kk, sl, ba, ht, …) are never a selection.
+    """
+    if not language or confidence < min_confidence:
+        return False
+    lang = language.lower()
+    menu = {item.lower() for item in menu_languages}
+    if lang in menu:
+        return True
+    if lang not in MAJOR_LID_LANGUAGES:
+        return False
+    return confidence >= off_menu_min_confidence

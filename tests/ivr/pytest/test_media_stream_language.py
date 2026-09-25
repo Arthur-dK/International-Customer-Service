@@ -32,6 +32,8 @@ def _patch_fast_backends(monkeypatch) -> None:
     monkeypatch.setattr("app.api.ivr.settings.IVR_SILENCE_TIMEOUT_S", 0.3)
     monkeypatch.setattr("app.api.ivr.settings.IVR_PLAYBACK_REALTIME", False)
     monkeypatch.setattr("app.api.ivr.settings.IVR_MIN_LID_CONFIDENCE", 0.1)
+    monkeypatch.setattr("app.api.ivr.settings.IVR_MIN_LID_UTTERANCE_MS", 0.0)
+    monkeypatch.setattr("app.api.ivr.settings.IVR_OFF_MENU_LID_CONFIDENCE", 0.5)
 
 
 def _collect_outbound_media(websocket, min_frames: int = 1, overall_timeout_s: float = 2.0) -> list[dict]:
@@ -119,6 +121,7 @@ def test_media_stream_language_selection_via_speech(monkeypatch):
 
         outbound = _collect_outbound_media(websocket, min_frames=1, overall_timeout_s=2.0)
         assert any(m.get("event") == "media" for m in outbound)
+        time.sleep(0.2)
 
         tone = generate_tone_mulaw(duration_ms=20, amplitude=0.6)
         for _ in range(25):

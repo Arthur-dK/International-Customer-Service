@@ -93,7 +93,7 @@ Every decision for this feature maps to an ADR. ADR-001 is the hosting prerequis
 | `IVR_LID_FORCE_LANGUAGE` | If set (e.g. `en`), force Fixed LID — Phase 9 smoke profile |
 | `IVR_SPEECHBRAIN_MODEL` | Default `speechbrain/lang-id-voxlingua107-ecapa` |
 | `IVR_MIN_LID_CONFIDENCE` | Default `0.15` — reject LID below this |
-| `IVR_SILENCE_TIMEOUT_S` | Default `5.0` — silence before DTMF fallback |
+| `IVR_SILENCE_TIMEOUT_S` | Default `6.0` — listen window before DTMF fallback; rejected “um”/noise does not end the window early |
 | `IVR_PLAYBACK_REALTIME` | Default `false` — burst into Twilio buffer (smooth). `true` ≈ 20ms pacing (often choppy live) |
 | `IVR_VAD_RMS_THRESHOLD` | Default `250.0` — energy VAD sensitivity |
 | `IVR_PIPER_MODEL_PATH` / `IVR_PIPER_BIN` | If set, use Piper TTS; else Windows SAPI; else tone stub |

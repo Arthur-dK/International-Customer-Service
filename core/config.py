@@ -30,9 +30,13 @@ class Settings(BaseSettings):
     IVR_USE_SPEECHBRAIN_LID: bool = True
     IVR_SPEECHBRAIN_MODEL: str = "speechbrain/lang-id-voxlingua107-ecapa"
     IVR_MIN_LID_CONFIDENCE: float = 0.15
+    # Off-menu spoken languages (e.g. French from a UK number) need a higher bar.
+    IVR_OFF_MENU_LID_CONFIDENCE: float = 0.5
+    # Ignore throat-clears / "um"; VAD end-padding is ~400 ms.
+    IVR_MIN_LID_UTTERANCE_MS: float = 800.0
 
     # IVR language selection runtime
-    IVR_SILENCE_TIMEOUT_S: float = 5.0
+    IVR_SILENCE_TIMEOUT_S: float = 6.0
     # False = burst frames to Twilio (it buffers). True often causes choppy gaps
     # because event-loop sleep + WS latency exceeds 20ms per frame.
     IVR_PLAYBACK_REALTIME: bool = False

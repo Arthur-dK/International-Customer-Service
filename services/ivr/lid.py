@@ -219,7 +219,25 @@ def _speechbrain_checkpoint_load() -> Iterator[None]:
         torch.load = original  # type: ignore[method-assign]
 
 
+def _speechbrain_local_strategy() -> Any:
+    """Windows cannot create the symlinks SpeechBrain uses by default (WinError 1314)."""
+    from speechbrain.utils.fetching import LocalStrategy
+
+    if sys.platform == "win32":
+        return LocalStrategy.COPY
+    return LocalStrategy.SYMLINK
+
+
+def _prepare_speechbrain_import() -> None:
+    """Skip SpeechBrain's deprecated TF32 setter; it warns on every process start."""
+    existing = os.environ.get("SB_DISABLE_QUIRKS", "")
+    names = {part.strip() for part in existing.split(",") if part.strip()}
+    names.add("allow_tf32")
+    os.environ["SB_DISABLE_QUIRKS"] = ",".join(sorted(names))
+
+
 def _load_speechbrain_classifier(model_source: str, device: str) -> Any:
+    _prepare_speechbrain_import()
     from speechbrain.inference.classifiers import EncoderClassifier  # type: ignore
 
     savedir = _speechbrain_savedir(model_source)
@@ -243,6 +261,7 @@ def _load_speechbrain_classifier(model_source: str, device: str) -> Any:
             source=source,
             savedir=str(savedir),
             run_opts={"device": device},
+            local_strategy=_speechbrain_local_strategy(),
         )
 
 
@@ -263,6 +282,7 @@ class SpeechBrainLanguageIdentifier:
         if classifier is not None:
             self._classifier = classifier
         else:
+            _prepare_speechbrain_import()
             _patch_speechbrain_windows_lazy_imports()
             try:
                 import speechbrain  # noqa: F401
