@@ -16,12 +16,19 @@ from app.deps import (
 )
 from core.config import settings
 from core.language import resolve_caller_locale
+from core.telephony.allowlist import is_caller_allowed
+from core.telephony.rejection import not_recognised_say
+from services.ivr.force_hangup import schedule_rejection_hangup
 from services.ivr.language_selection import CLEAR_AUDIO_SENTINEL, LanguageSelector
 from services.ivr.selection_store import set_last_language_selection
 from services.ivr.turn_engine import PlaceholderTurnEngine
 from services.ivr.turn_store import set_last_turns
 from services.ivr.ttfb import TtfbHarness
-from services.ivr.twiml import build_media_stream_connect_twiml
+from services.ivr.twiml import (
+    build_hangup_twiml,
+    build_media_stream_connect_twiml,
+    build_not_recognised_twiml,
+)
 from services.ivr.vad import EnergyVad
 
 logger = logging.getLogger(__name__)
@@ -33,7 +40,8 @@ router = APIRouter(tags=["ivr"])
 async def voice_webhook(request: Request):
     """
     Twilio Voice webhook.
-    Parses the caller number, attaches locale metadata, and opens a media stream.
+    An allowlisted number opens a media stream. Any other number is told it is
+    not recognised and the call ends before language selection.
     """
     form = await request.form()
     caller_from = form.get("From") or form.get("Caller") or None
@@ -41,23 +49,58 @@ async def voice_webhook(request: Request):
         caller_from = str(caller_from)
 
     locale = resolve_caller_locale(caller_from)
+    allowed = is_caller_allowed(caller_from)
+    logger.info(
+        "incoming_call from=%s country=%s known=%s languages=%s allowed=%s",
+        locale.e164 or caller_from,
+        locale.country_code,
+        locale.country_known,
+        list(locale.languages),
+        allowed,
+    )
+    if not allowed:
+        say_language, text = not_recognised_say(locale.prompt_language)
+        call_sid = form.get("CallSid")
+        schedule_rejection_hangup(str(call_sid) if call_sid else None, text)
+        hangup_url = _public_url(request, "/voice/hangup")
+        return Response(
+            content=build_not_recognised_twiml(
+                text=text,
+                say_language=say_language,
+                hangup_url=hangup_url,
+            ),
+            media_type="text/xml",
+        )
+
     host = request.headers.get("host", "localhost:8000")
     ws_protocol = "wss" if "ngrok" in host or request.url.scheme == "https" else "ws"
     ws_url = f"{ws_protocol}://{host}/media-stream"
-
     twiml_response = build_media_stream_connect_twiml(
         ws_url,
         caller_from=locale.e164 or caller_from,
         country_code=locale.country_code if locale.country_known else None,
     )
-    logger.info(
-        "incoming_call from=%s country=%s known=%s languages=%s",
-        locale.e164 or caller_from,
-        locale.country_code,
-        locale.country_known,
-        list(locale.languages),
-    )
     return Response(content=twiml_response, media_type="application/xml")
+
+
+@router.api_route("/voice/hangup", methods=["GET", "POST"])
+async def voice_hangup():
+    """Second Twilio fetch: the call is already answered, so Hangup can end it."""
+    logger.info("rejection_hangup")
+    return Response(content=build_hangup_twiml(), media_type="text/xml")
+
+
+def _public_url(request: Request, path: str) -> str:
+    """Absolute URL Twilio can fetch, including the ngrok host forwarded to us."""
+    host = request.headers.get("host", "localhost:8000")
+    forwarded = (request.headers.get("x-forwarded-proto") or "").split(",")[0].strip()
+    if forwarded in ("http", "https"):
+        scheme = forwarded
+    elif "ngrok" in host or request.url.scheme == "https":
+        scheme = "https"
+    else:
+        scheme = request.url.scheme or "http"
+    return f"{scheme}://{host}{path}"
 
 
 @router.websocket("/media-stream")
