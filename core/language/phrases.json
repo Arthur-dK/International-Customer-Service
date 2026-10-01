@@ -7,35 +7,59 @@
     },
     "did_not_catch": {
       "en": "Sorry, I did not catch that. Please try again.",
-      "fr": "Désolé, je n'ai pas compris. Veuillez réessayer."
+      "fr": "Désolé, je n'ai pas compris. Veuillez réessayer.",
+      "he": "סליחה, לא הבנתי. נסה שוב.",
+      "ar": "عذراً، لم أفهم. حاول مرة أخرى.",
+      "sw": "Samahani, sikusikia. Tafadhali jaribu tena."
     },
     "main_menu": {
       "en": "You can check your balance, check your PIN, hear your statement, block your card, or unblock your card.",
-      "fr": "Vous pouvez consulter votre solde, consulter votre code PIN, entendre votre relevé, bloquer votre carte, ou débloquer votre carte."
+      "fr": "Vous pouvez consulter votre solde, consulter votre code PIN, entendre votre relevé, bloquer votre carte, ou débloquer votre carte.",
+      "he": "אפשר לבדוק יתרה, לבדוק פין, לשמוע דוח, לחסום כרטיס, או לשחרר כרטיס.",
+      "ar": "يمكنك التحقق من الرصيد، أو التحقق من pin، أو سماع الكشف، أو حظر البطاقة، أو تنشيط البطاقة.",
+      "sw": "Unaweza kuangalia salio, kuangalia pin, kusikia taarifa, kuzuia kadi, au kufungua kadi."
     },
     "placeholder_balance": {
       "en": "Your available balance is one hundred dollars. This is a placeholder.",
-      "fr": "Votre solde disponible est de cent dollars. Ceci est un exemple."
+      "fr": "Votre solde disponible est de cent dollars. Ceci est un exemple.",
+      "he": "היתרה הזמינה שלך היא מאה דולר. זהו מציין מקום.",
+      "ar": "رصيدك المتاح هو مئة دولار. هذا رد تجريبي.",
+      "sw": "Salio lako linalopatikana ni dola mia moja. Hii ni ujumbe wa mfano."
     },
     "placeholder_pin": {
-      "en": "Your PIN is one two three four. This is a placeholder.",
-      "fr": "Votre code PIN est un deux trois quatre. Ceci est un exemple."
+      "en": "Your PIN will not be spoken on this call. This is a placeholder.",
+      "fr": "Votre code PIN ne sera pas prononcé pendant cet appel. Ceci est un exemple.",
+      "he": "הקוד הסודי לא ייאמר במהלך השיחה. זו הודעת דוגמה.",
+      "ar": "لن يُتلى رمز الدخول خلال هذه المكالمة. هذه رسالة تجريبية.",
+      "sw": "PIN haitasomwa katika simu hii. Hii ni ujumbe wa mfano."
     },
     "placeholder_blocked": {
       "en": "Your card has been blocked. This is a placeholder.",
-      "fr": "Votre carte a été bloquée. Ceci est un exemple."
+      "fr": "Votre carte a été bloquée. Ceci est un exemple.",
+      "he": "הכרטיס שלך נחסם. זהו מציין מקום.",
+      "ar": "تم حظر بطاقتك. هذا رد تجريبي.",
+      "sw": "Kadi yako imezuiwa. Hii ni ujumbe wa mfano."
     },
     "placeholder_statement": {
       "en": "Your latest card statement is ready. This is a placeholder.",
-      "fr": "Votre dernier relevé de carte est prêt. Ceci est un exemple."
+      "fr": "Votre dernier relevé de carte est prêt. Ceci est un exemple.",
+      "he": "דוח הכרטיס האחרון שלך מוכן. זהו מציין מקום.",
+      "ar": "كشف البطاقة الأخير جاهز. هذا رد تجريبي.",
+      "sw": "Taarifa ya hivi karibuni ya kadi iko tayari. Hii ni ujumbe wa mfano."
     },
     "placeholder_unblocked": {
       "en": "Your card has been unblocked. This is a placeholder.",
-      "fr": "Votre carte a été débloquée. Ceci est un exemple."
+      "fr": "Votre carte a été débloquée. Ceci est un exemple.",
+      "he": "החסימה הוסרה מהכרטיס שלך. זהו מציין מקום.",
+      "ar": "بطاقتك نشطة مرة أخرى. هذا رد تجريبي.",
+      "sw": "Kadi yako imefunguliwa. Hii ni ujumbe wa mfano."
     },
     "goodbye": {
       "en": "Goodbye.",
-      "fr": "Au revoir."
+      "fr": "Au revoir.",
+      "he": "להתראות.",
+      "ar": "مع السلامة.",
+      "sw": "Kwaheri."
     }
   }
 }

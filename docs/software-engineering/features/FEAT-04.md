@@ -5,7 +5,7 @@
 | **Feature ID** | FEAT-04 |
 | **Name** | Keyword placeholder intents, caller-ID gate, in-memory audio |
 | **Branch** | `feat/stub-intent-router` |
-| **Status** | Phases 1–2 implemented. Phases 3–6 not started. |
+| **Status** | Phases 1–3 implemented. Phases 4–6 not started. |
 | **Target** | Route keyword requests to five canned card actions after an allowlisted caller picks a language |
 
 Language selection remains [FEAT-02](FEAT-02.md). Templated turns and TTFB remain [FEAT-03](FEAT-03.md). Decisions for this feature start at [ADR-020](../adr/ADR-020.md).
@@ -46,7 +46,10 @@ Each phase has its own tests. Do not start the next phase until the current one 
 
 ### Phase 3 — Phrase catalog
 
-Not started. Canned replies, including a PIN line with no digits or spelled-out numbers.
+- **Goal:** Each action plays one canned line, in the selected language, and the PIN line does not speak a PIN.
+- **Delivered:** `core/language/phrases.json` lines for balance, PIN, statement, block, and unblock in English, French, Hebrew, Arabic, and Swahili; [ADR-023](../adr/ADR-023.md). The English PIN line is "Your PIN will not be spoken on this call. This is a placeholder."
+- **Tests:** `tests/ivr/pytest/test_phrase_catalog.py`.
+- **Done when:** every action has a distinct line in each of the five languages; the PIN line has no digits and no run of spelled-out numbers.
 
 ### Phase 4 — Confirm and keypad
 
@@ -83,3 +86,4 @@ What went wrong while this phase was called, and what we concluded.
 | [ADR-020](../adr/ADR-020.md) | Allowlist gate before language selection | Phase 1 |
 | [ADR-021](../adr/ADR-021.md) | Whole-word keyword intents | Phase 2 |
 | [ADR-022](../adr/ADR-022.md) | Hear language selection; add languages without a rewrite | This phase stays callable end to end |
+| [ADR-023](../adr/ADR-023.md) | One canned line per action, and the PIN is not spoken | Phase 3 |
