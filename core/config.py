@@ -43,10 +43,13 @@ class Settings(BaseSettings):
     IVR_VAD_RMS_THRESHOLD: float = 250.0
 
     # Comma-separated stub transcripts for live smoke (e.g. "balance,goodbye").
-    # Ignored when IVR_STT_BACKEND=sapi.
+    # Ignored when IVR_STT_BACKEND is whisper or sapi.
     IVR_STT_SCRIPT: str | None = None
-    # scripted (default, CI / Phase 7) | sapi (Windows grammar — hears balance/PIN/block/goodbye)
+    # scripted (CI) | whisper (free-form local transcription) | sapi (Windows dictation)
     IVR_STT_BACKEND: str = "scripted"
+    # Local Whisper size. "tiny" answers in under a second on this PC.
+    # "small" transcribes more carefully and takes about three seconds.
+    IVR_WHISPER_MODEL: str = "tiny"
 
     @field_validator("IVR_LID_FORCE_LANGUAGE", mode="before")
     @classmethod

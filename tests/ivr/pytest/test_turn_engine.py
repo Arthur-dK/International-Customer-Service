@@ -20,7 +20,7 @@ from services.ivr.placeholder_intents import map_placeholder_intent
 from services.ivr.streaming_stt import ScriptedStreamingSpeechToText
 from services.ivr.tts import ToneTextToSpeech
 from services.ivr.ttfb import CANNED_TTFB_BUDGET_MS, TtfbHarness
-from services.ivr.turn_engine import PlaceholderTurnEngine
+from services.ivr.turn_engine import PlaceholderTurnEngine, _phrase_for_transcript
 
 
 class CountingTone(ToneTextToSpeech):
@@ -35,6 +35,12 @@ class CountingTone(ToneTextToSpeech):
 
 def _utterance_mulaw() -> bytes:
     return generate_tone_mulaw(400, amplitude=0.45) + generate_silence_mulaw(400)
+
+
+def test_mixed_actions_ask_to_repeat_and_goodbye_still_ends():
+    assert _phrase_for_transcript("Can I check the balance, PIN?", "en") == DID_NOT_CATCH
+    assert _phrase_for_transcript("Can I check my PIN?", "en") == PLACEHOLDER_PIN
+    assert _phrase_for_transcript("goodbye", "en") == GOODBYE
 
 
 def test_map_placeholder_intent_english_and_french():

@@ -10,8 +10,8 @@
       "fr": "Désolé, je n'ai pas compris. Veuillez réessayer."
     },
     "main_menu": {
-      "en": "You can say balance, PIN, or block card. You can also say goodbye.",
-      "fr": "Vous pouvez dire solde, code PIN, ou bloquer la carte. Vous pouvez aussi dire au revoir."
+      "en": "You can check your balance, check your PIN, hear your statement, block your card, or unblock your card.",
+      "fr": "Vous pouvez consulter votre solde, consulter votre code PIN, entendre votre relevé, bloquer votre carte, ou débloquer votre carte."
     },
     "placeholder_balance": {
       "en": "Your available balance is one hundred dollars. This is a placeholder.",
@@ -24,6 +24,14 @@
     "placeholder_blocked": {
       "en": "Your card has been blocked. This is a placeholder.",
       "fr": "Votre carte a été bloquée. Ceci est un exemple."
+    },
+    "placeholder_statement": {
+      "en": "Your latest card statement is ready. This is a placeholder.",
+      "fr": "Votre dernier relevé de carte est prêt. Ceci est un exemple."
+    },
+    "placeholder_unblocked": {
+      "en": "Your card has been unblocked. This is a placeholder.",
+      "fr": "Votre carte a été débloquée. Ceci est un exemple."
     },
     "goodbye": {
       "en": "Goodbye.",

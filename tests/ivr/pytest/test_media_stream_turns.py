@@ -86,6 +86,7 @@ def test_media_stream_placeholder_turn_after_language_selection(tmp_path, monkey
             m.get("streamSid") == STREAM_SID for m in menu if m.get("event") == "media"
         )
 
+        time.sleep(0.3)
         _send_utterance(websocket)
         turns = _wait_for_turns(timeout_s=3.0)
         reply = _collect_outbound_media(websocket, min_frames=1, overall_timeout_s=2.0)

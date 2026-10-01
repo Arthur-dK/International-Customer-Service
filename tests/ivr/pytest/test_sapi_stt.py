@@ -16,12 +16,14 @@ def _utterance_mulaw() -> bytes:
 
 
 def test_grammar_phrases_cover_english_and_french_intents():
-    en = " ".join(grammar_phrases("en"))
-    fr = " ".join(grammar_phrases("fr"))
+    en = grammar_phrases("en")
+    fr = grammar_phrases("fr")
     assert map_placeholder_intent("please tell me my balance") == PLACEHOLDER_BALANCE
-    assert "balance" in en
+    assert "check my balance" in en
+    assert "unblock my card" in en
     assert "solde" in fr
-    assert map_placeholder_intent(fr.split()[0]) == PLACEHOLDER_BALANCE
+    assert "débloquer" in fr
+    assert map_placeholder_intent(fr[0]) == PLACEHOLDER_BALANCE
 
 
 def test_recognizer_culture_maps_iso_to_sapi():

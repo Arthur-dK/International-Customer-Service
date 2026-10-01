@@ -7,10 +7,29 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import time
 from collections.abc import Callable
 from dataclasses import dataclass
 
-from core.language.phrases import GOODBYE, MAIN_MENU
+from core.language.phrases import (
+    DID_NOT_CATCH,
+    GOODBYE,
+    MAIN_MENU,
+    PLACEHOLDER_BALANCE,
+    PLACEHOLDER_BLOCKED,
+    PLACEHOLDER_PIN,
+    PLACEHOLDER_STATEMENT,
+    PLACEHOLDER_UNBLOCKED,
+)
+from services.ivr.audio import TWILIO_SAMPLE_RATE
+from services.ivr.intent_router import (
+    BLOCK_CARD,
+    GET_BALANCE,
+    GET_CARD_STATEMENT,
+    GET_PIN,
+    UNBLOCK_CARD,
+    matched_intents,
+)
 from services.ivr.phrase_cache import PhraseAudioCache
 from services.ivr.placeholder_intents import map_placeholder_intent
 from services.ivr.streaming_stt import StreamingSpeechToText, Transcript, feed_until_speech_end
@@ -19,6 +38,28 @@ from services.ivr.ttfb import ReplyKind, TtfbHarness
 from services.ivr.vad import EnergyVad, VadConfig
 
 logger = logging.getLogger(__name__)
+
+_INTENT_PHRASES = {
+    GET_BALANCE: PLACEHOLDER_BALANCE,
+    GET_PIN: PLACEHOLDER_PIN,
+    GET_CARD_STATEMENT: PLACEHOLDER_STATEMENT,
+    BLOCK_CARD: PLACEHOLDER_BLOCKED,
+    UNBLOCK_CARD: PLACEHOLDER_UNBLOCKED,
+}
+
+
+def _phrase_for_transcript(text: str, language: str) -> str:
+    """Prefer the five-action router. Keep goodbye on the older keyword map.
+
+    A transcript with two actions is not understood. It must not fall through
+    to the older map, which returns the first keyword it sees.
+    """
+    found = matched_intents(text, language)
+    if len(found) == 1:
+        return _INTENT_PHRASES[next(iter(found))]
+    if found:
+        return DID_NOT_CATCH
+    return map_placeholder_intent(text)
 
 
 @dataclass(frozen=True)
@@ -54,6 +95,33 @@ class PlaceholderTurnEngine:
 
     async def start(self) -> None:
         await self.stt.start(language=self.language)
+
+    async def _discard_playback_echo(
+        self,
+        inbound_audio: asyncio.Queue[bytes],
+        stop_event: asyncio.Event,
+        phrase_id: str,
+    ) -> None:
+        """Ignore the microphone while a prompt is still playing.
+
+        Burst playback returns before the caller has heard the line. The phone
+        echo of that line was being treated as their answer.
+        """
+        try:
+            audio = self.cache.get_ready(phrase_id, self.language)
+        except Exception:
+            return
+        deadline = time.perf_counter() + (len(audio) / float(TWILIO_SAMPLE_RATE))
+        while time.perf_counter() < deadline and not stop_event.is_set():
+            try:
+                inbound_audio.get_nowait()
+            except asyncio.QueueEmpty:
+                await asyncio.sleep(0.05)
+        while True:
+            try:
+                inbound_audio.get_nowait()
+            except asyncio.QueueEmpty:
+                break
 
     async def play_phrase(
         self,
@@ -109,13 +177,19 @@ class PlaceholderTurnEngine:
     ) -> TurnResult | None:
         """Read live Media Stream frames until VAD speech_end, then canned reply."""
         self.vad.reset()
+        heard_speech = False
         while not stop_event.is_set():
             try:
                 chunk = await asyncio.wait_for(inbound_audio.get(), timeout=0.1)
             except asyncio.TimeoutError:
                 continue
-            await self.stt.feed_mulaw(chunk)
-            for event in self.vad.process_mulaw(chunk):
+            events = list(self.vad.process_mulaw(chunk))
+            if any(event.kind == "speech_start" for event in events):
+                await self.stt.start(language=self.language)
+                heard_speech = True
+            if heard_speech:
+                await self.stt.feed_mulaw(chunk)
+            for event in events:
                 if event.kind == "speech_end":
                     self.ttfb.mark_speech_end()
                     transcript = await self.stt.finish()
@@ -138,6 +212,8 @@ class PlaceholderTurnEngine:
         await self.start()
         if play_menu:
             await self.play_phrase(MAIN_MENU, outbound_audio, measure_ttfb=False)
+            await self._discard_playback_echo(inbound_audio, stop_event, MAIN_MENU)
+            await self.start()
         results: list[TurnResult] = []
         for _ in range(max_turns):
             if stop_event.is_set():
@@ -152,6 +228,8 @@ class PlaceholderTurnEngine:
                 on_turn(results)
             if result.ended:
                 break
+            await self._discard_playback_echo(inbound_audio, stop_event, result.phrase_id)
+            await self.start()
         return results
 
     async def run_scripted_session(
@@ -182,7 +260,7 @@ class PlaceholderTurnEngine:
         *,
         cancel: asyncio.Event | None,
     ) -> TurnResult:
-        phrase_id = map_placeholder_intent(transcript.text)
+        phrase_id = _phrase_for_transcript(transcript.text, self.language)
         sent = await self.play_phrase(
             phrase_id,
             outbound,

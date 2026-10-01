@@ -18,7 +18,9 @@ DID_NOT_CATCH = "did_not_catch"
 MAIN_MENU = "main_menu"
 PLACEHOLDER_BALANCE = "placeholder_balance"
 PLACEHOLDER_PIN = "placeholder_pin"
+PLACEHOLDER_STATEMENT = "placeholder_statement"
 PLACEHOLDER_BLOCKED = "placeholder_blocked"
+PLACEHOLDER_UNBLOCKED = "placeholder_unblocked"
 GOODBYE = "goodbye"
 
 

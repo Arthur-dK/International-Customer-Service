@@ -13,6 +13,7 @@ numpy>=1.26.0
 ollama>=0.1.7
 phonenumbers>=8.13.0
 huggingface_hub>=0.23.0
+faster-whisper>=1.1.0
 
 # Linux default pip: install SpeechBrain LID (skipped on Windows).
 --extra-index-url https://download.pytorch.org/whl/cpu

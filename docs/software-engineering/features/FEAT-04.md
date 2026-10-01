@@ -5,7 +5,7 @@
 | **Feature ID** | FEAT-04 |
 | **Name** | Keyword placeholder intents, caller-ID gate, in-memory audio |
 | **Branch** | `feat/stub-intent-router` |
-| **Status** | Phase 1 implemented. Phases 2–6 not started. |
+| **Status** | Phases 1–2 implemented. Phases 3–6 not started. |
 | **Target** | Route keyword requests to five canned card actions after an allowlisted caller picks a language |
 
 Language selection remains [FEAT-02](FEAT-02.md). Templated turns and TTFB remain [FEAT-03](FEAT-03.md). Decisions for this feature start at [ADR-020](../adr/ADR-020.md).
@@ -39,7 +39,10 @@ Each phase has its own tests. Do not start the next phase until the current one 
 
 ### Phase 2 — Keyword router
 
-Not started. Whole-word match for the five actions in English, French, Hebrew, Arabic, and Swahili. Two actions in one utterance are not understood.
+- **Goal:** A transcript in the selected language maps to one of the five actions, or to no match.
+- **Delivered:** `services/ivr/intent_router.py`; [ADR-021](../adr/ADR-021.md). After language selection, the turn engine uses `route_intent`. The older mapper is only for goodbye. A sentence with two actions asks the caller to repeat.
+- **Tests:** `tests/ivr/pytest/test_intent_router.py`.
+- **Done when:** varied sentences in English, French, Hebrew, Arabic, and Swahili route when they contain that language's keyword as a whole word; unblock does not match block; two actions do not match.
 
 ### Phase 3 — Phrase catalog
 
@@ -59,8 +62,24 @@ Not started. Caller audio stays in memory. Tests forbid new `.wav` / `.mp3` file
 
 ---
 
+## Errors on live calls
+
+What went wrong while this phase was called, and what we concluded.
+
+1. **The rejection message played, then the line stayed silent.** `<Hangup>` in the first webhook does not end the call, because that webhook still sees the call as ringing. The document now says the line, pauses one second, and redirects to a second document whose only verb is `<Hangup>`. Completing the call through Twilio's REST API does nothing while the account credentials are placeholders.
+2. **Every sentence was answered with "I did not catch that."** `IVR_STT_BACKEND=whisper` was set before a Whisper recognizer existed, so the live path was the scripted recognizer. That ignores the audio and returns an empty transcript.
+3. **A fixed phrase list still missed phone speech.** Windows speech grammar only accepts exact phrases. Open dictation on the same audio returned a single letter, or an unrelated sentence such as "Collide, do you want bells, please?" A closed list is not the recognizer. The caller can say any sentence. Whisper writes it down, and the router looks for one action word.
+4. **The task menu was treated as the caller's answer.** Burst playback returns before the caller has heard the line, and the phone echo of that line was transcribed. Inbound audio is now ignored for the length of the line that is playing.
+5. **The first PIN request played the balance line.** Whisper was given a hint sentence that starts "Can I check the balance, PIN…", and it copied "balance" into the transcript ("Can I check the balance, PIN?"). The older keyword map then returned the first word it found. The hint sentence was removed. Two actions in one sentence now ask the caller to repeat. The older map is only used for goodbye.
+6. **Language selection seemed not to hear anything, then it worked.** Speech during the language prompt is discarded. On this PC that prompt is 3.6 seconds. A clip under 0.8 seconds is also rejected. After the prompt finished, "I would like English please" (1.5 seconds) was accepted as English. No selection rule was changed for that call.
+7. **About four seconds of silence after the caller stopped talking.** That was Whisper `small` transcribing (3.9 seconds, then 3.8 seconds). The six-second silence timer, which opens the language keypad, did not run. `small` cannot be made quick enough on this PC, so the live model is `tiny` again. `tiny` is fast and still a weak phone recognizer. A better one is left for later: [later.md](../later.md).
+
+---
+
 ## ADR correlation
 
 | ADR | Title | Role |
 |-----|--------|------|
 | [ADR-020](../adr/ADR-020.md) | Allowlist gate before language selection | Phase 1 |
+| [ADR-021](../adr/ADR-021.md) | Whole-word keyword intents | Phase 2 |
+| [ADR-022](../adr/ADR-022.md) | Hear language selection; add languages without a rewrite | This phase stays callable end to end |
