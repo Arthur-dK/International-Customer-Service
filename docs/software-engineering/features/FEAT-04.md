@@ -84,7 +84,24 @@ What went wrong while this phase was called, and what we concluded.
 4. **The task menu was treated as the caller's answer.** Burst playback returns before the caller has heard the line, and the phone echo of that line was transcribed. Inbound audio is now ignored for the length of the line that is playing.
 5. **The first PIN request played the balance line.** Whisper was given a hint sentence that starts "Can I check the balance, PIN…", and it copied "balance" into the transcript ("Can I check the balance, PIN?"). The older keyword map then returned the first word it found. The hint sentence was removed. Two actions in one sentence now ask the caller to repeat. The older map is only used for goodbye.
 6. **Language selection seemed not to hear anything, then it worked.** Speech during the language prompt is discarded. On this PC that prompt is 3.6 seconds. A clip under 0.8 seconds is also rejected. After the prompt finished, "I would like English please" (1.5 seconds) was accepted as English. No selection rule was changed for that call.
-7. **About four seconds of silence after the caller stopped talking.** That was Whisper `small` transcribing (3.9 seconds, then 3.8 seconds). The six-second silence timer, which opens the language keypad, did not run. `small` cannot be made quick enough on this PC, so the live model is `tiny` again. `tiny` is fast and still a weak phone recognizer. A better one is left for later: [later.md](../later.md).
+7. **About four seconds of silence after the caller stopped talking.** That was Whisper `small` transcribing (3.9 seconds, then 3.8 seconds). The six-second silence timer, which opens the language keypad, did not run. Faster decode settings only moved a test sentence from 3.3 seconds to 3.0 seconds. `small` cannot be made quick enough on this PC, so the live model is `tiny` again. `tiny` is fast and still a weak phone recognizer. A better one is left for later: [later.md](../later.md).
+8. **The first balance request failed and the second worked.** The first transcript was "Collide, do you want bells, please?" and did not match. The second was "Can I check the balance please?" and played the balance line. Audio from before the caller started speaking had been included. The recognizer is now fed only after speech starts. A hint sentence was also removed, because it was copied into a later PIN transcript (item 5).
+9. **"Block my card" was heard as "block my cop" and still blocked the card.** The match is the whole word `block`. A wrong word next to it does not cancel the action.
+10. **A changed catalog line kept playing the old recording.** Phrase audio is stored as `.cache/ivr-phrases/{phrase id}.{language}.mulaw`. The file name does not include the text. After a line changes, that file has to be deleted or the phone keeps the old audio. This happened to the English PIN line.
+11. **`test_default_allowlist_file_is_empty` failed.** The live test number is committed in `allowed_callers.json`, which [ADR-020](../adr/ADR-020.md) allows. An empty list is still tested with a temporary file. The webhook test checks that each committed entry is an exact E.164 string.
+12. **Pytest printed four warnings.** SpeechBrain was setting an old Torch switch at import. That switch is skipped before import, and on this CPU it does not change language detection. Starlette's test client wanted `httpx2`, which is installed beside the app's existing `httpx`. The Windows speech test was using a retired event-loop policy. It now starts a selector loop directly. Call behavior did not change.
+
+---
+
+## Decisions recorded outside the ADRs
+
+The ADRs above are the decision record. These are the smaller choices and facts that do not have their own ADR.
+
+- Spanish was replaced with French, so one non-English language can be heard on this PC. The five languages are English, French, Hebrew, Arabic, and Swahili.
+- The task menu is: "You can check your balance, check your PIN, hear your statement, block your card, or unblock your card." Goodbye is not on that menu.
+- The balance line may still say a placeholder amount ("one hundred dollars"). Only the PIN line is forbidden from digits and spelled-out numbers ([ADR-023](../adr/ADR-023.md)).
+- The recognizer is not given audio until speech has started, so silence and the tail of a prompt are not the transcript.
+- Hearing French, Hebrew, Arabic, or Swahili with a real voice on this PC, without paying for a host, is not part of this phase. See [later.md](../later.md).
 
 ---
 
