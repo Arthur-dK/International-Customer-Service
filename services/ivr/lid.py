@@ -424,6 +424,7 @@ def build_default_lid(
 
 def speechbrain_available() -> bool:
     try:
+        _prepare_speechbrain_import()
         import speechbrain  # noqa: F401
         import torch  # noqa: F401
 

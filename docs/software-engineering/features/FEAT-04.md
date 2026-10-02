@@ -5,7 +5,7 @@
 | **Feature ID** | FEAT-04 |
 | **Name** | Keyword placeholder intents, caller-ID gate, in-memory audio |
 | **Branch** | `feat/stub-intent-router` |
-| **Status** | Phases 1–5 implemented. Phase 6 not started. |
+| **Status** | Phases 1–6 implemented. |
 | **Target** | Route keyword requests to five canned card actions after an allowlisted caller picks a language |
 
 Language selection remains [FEAT-02](FEAT-02.md). Templated turns and TTFB remain [FEAT-03](FEAT-03.md). Decisions for this feature start at [ADR-020](../adr/ADR-020.md).
@@ -67,7 +67,10 @@ Each phase has its own tests. Do not start the next phase until the current one 
 
 ### Phase 6 — Privacy assertions
 
-Not started. Caller audio stays in memory. Tests forbid new `.wav` / `.mp3` files and PIN digit strings in logs. Static prompt caches may stay.
+- **Goal:** Caller audio stays in memory. A turn does not leave a `.wav` or `.mp3`, and logs do not contain a PIN as digits.
+- **Delivered:** [ADR-026](../adr/ADR-026.md). Temporary speech files were already deleted when synthesis or recognition finished. The new tests lock that in.
+- **Tests:** `tests/ivr/pytest/test_privacy.py`.
+- **Done when:** a PIN turn logs the transcript and not `1234` or "one two three four"; the repo gains no `.wav` or `.mp3`; the `incoming_call` log still contains the full number; a Windows recognition temporary directory is gone after the call.
 
 ---
 
@@ -95,3 +98,4 @@ What went wrong while this phase was called, and what we concluded.
 | [ADR-023](../adr/ADR-023.md) | One canned line per action, and the PIN is not spoken | Phase 3 |
 | [ADR-024](../adr/ADR-024.md) | Confirm block and unblock, then a keypad after silence | Phase 4 |
 | [ADR-025](../adr/ADR-025.md) | Task dialogue stays on the existing media stream | Phase 5 |
+| [ADR-026](../adr/ADR-026.md) | Caller audio stays in memory | Phase 6 |

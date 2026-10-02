@@ -76,12 +76,13 @@ def main() -> int:
 
     OUT_DIR.mkdir(parents=True, exist_ok=True)
 
+    run_kwargs = {}
     if args.selector_loop and sys.platform.startswith("win"):
-        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
-        print("Using WindowsSelectorEventLoopPolicy")
+        run_kwargs["loop_factory"] = asyncio.SelectorEventLoop
+        print("Using SelectorEventLoop")
 
     try:
-        name, audio = asyncio.run(_synthesize(args.backend, args.text, args.language))
+        name, audio = asyncio.run(_synthesize(args.backend, args.text, args.language), **run_kwargs)
     except Exception as exc:
         print(f"FAILED: synthesize raised {type(exc).__name__}: {exc}")
         return 1
