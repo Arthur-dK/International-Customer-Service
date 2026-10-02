@@ -5,7 +5,7 @@
 | **Feature ID** | FEAT-04 |
 | **Name** | Keyword placeholder intents, caller-ID gate, in-memory audio |
 | **Branch** | `feat/stub-intent-router` |
-| **Status** | Phases 1–4 implemented. Phases 5–6 not started. |
+| **Status** | Phases 1–5 implemented. Phase 6 not started. |
 | **Target** | Route keyword requests to five canned card actions after an allowlisted caller picks a language |
 
 Language selection remains [FEAT-02](FEAT-02.md). Templated turns and TTFB remain [FEAT-03](FEAT-03.md). Decisions for this feature start at [ADR-020](../adr/ADR-020.md).
@@ -60,7 +60,10 @@ Each phase has its own tests. Do not start the next phase until the current one 
 
 ### Phase 5 — Media stream
 
-Not started. The dialogue runs after language selection on the existing turn path. No new speech engine.
+- **Goal:** The task dialogue runs after language selection on the existing media stream. No new speech engine.
+- **Delivered:** `PlaceholderTurnEngine.run_on_queues` in [`app/api/ivr.py`](../../../app/api/ivr.py) on the same inbound, outbound, and keypad queues; [ADR-025](../adr/ADR-025.md).
+- **Tests:** `tests/ivr/pytest/test_media_stream_turns.py`.
+- **Done when:** a fake Twilio stream selects a language, then plays a canned reply, a block confirm followed by yes, and the task keypad after silence. The scripted recognizer is the only one used in that test.
 
 ### Phase 6 — Privacy assertions
 
@@ -91,3 +94,4 @@ What went wrong while this phase was called, and what we concluded.
 | [ADR-022](../adr/ADR-022.md) | Hear language selection; add languages without a rewrite | This phase stays callable end to end |
 | [ADR-023](../adr/ADR-023.md) | One canned line per action, and the PIN is not spoken | Phase 3 |
 | [ADR-024](../adr/ADR-024.md) | Confirm block and unblock, then a keypad after silence | Phase 4 |
+| [ADR-025](../adr/ADR-025.md) | Task dialogue stays on the existing media stream | Phase 5 |
