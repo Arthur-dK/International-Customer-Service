@@ -5,7 +5,7 @@
 | **Feature ID** | FEAT-04 |
 | **Name** | Keyword placeholder intents, caller-ID gate, in-memory audio |
 | **Branch** | `feat/stub-intent-router` |
-| **Status** | Phases 1–3 implemented. Phases 4–6 not started. |
+| **Status** | Phases 1–4 implemented. Phases 5–6 not started. |
 | **Target** | Route keyword requests to five canned card actions after an allowlisted caller picks a language |
 
 Language selection remains [FEAT-02](FEAT-02.md). Templated turns and TTFB remain [FEAT-03](FEAT-03.md). Decisions for this feature start at [ADR-020](../adr/ADR-020.md).
@@ -53,7 +53,10 @@ Each phase has its own tests. Do not start the next phase until the current one 
 
 ### Phase 4 — Confirm and keypad
 
-Not started. Block and unblock ask for yes or no. Six seconds of silence opens the keypad, and speech can interrupt it.
+- **Goal:** Block and unblock ask for yes or no. Six seconds of silence opens a keypad, and speech can interrupt it.
+- **Delivered:** `services/ivr/confirm.py`; confirm and keypad lines in `core/language/phrases.json`; the turn engine listens for speech, a key, or silence; [ADR-024](../adr/ADR-024.md).
+- **Tests:** `tests/ivr/pytest/test_confirm.py`, `tests/ivr/pytest/test_turn_engine.py`.
+- **Done when:** yes plays the result line; no, or a second unclear answer, plays the task menu; silence opens the keypad and does not spend the spoken retry. Keys are 1 balance, 2 PIN, 3 statement, 4 block, 5 unblock, and on confirm 1 yes, 2 no.
 
 ### Phase 5 — Media stream
 
@@ -87,3 +90,4 @@ What went wrong while this phase was called, and what we concluded.
 | [ADR-021](../adr/ADR-021.md) | Whole-word keyword intents | Phase 2 |
 | [ADR-022](../adr/ADR-022.md) | Hear language selection; add languages without a rewrite | This phase stays callable end to end |
 | [ADR-023](../adr/ADR-023.md) | One canned line per action, and the PIN is not spoken | Phase 3 |
+| [ADR-024](../adr/ADR-024.md) | Confirm block and unblock, then a keypad after silence | Phase 4 |

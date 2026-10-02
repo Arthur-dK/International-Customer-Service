@@ -243,10 +243,12 @@ async def twilio_media_stream(websocket: WebSocket):
                     ttfb=TtfbHarness(),
                     vad=EnergyVad(get_vad_config()),
                     fallback_tts=get_streaming_tts(),
+                    silence_timeout_s=settings.IVR_SILENCE_TIMEOUT_S,
                 )
                 await engine.run_on_queues(
                     inbound_audio=inbound_audio_queue,
                     outbound_audio=outbound_audio_queue,
+                    dtmf_digits=dtmf_queue,
                     stop_event=stop_event,
                     play_menu=True,
                     on_turn=set_last_turns,

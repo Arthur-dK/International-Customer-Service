@@ -49,8 +49,12 @@ def test_allowlisted_gb_caller_gets_gb_country_param(monkeypatch):
     assert 'name="from" value="+442071838750"' in response.text
 
 
-def test_default_allowlist_file_is_empty():
-    assert load_allowed_numbers() == frozenset()
+def test_allowlist_file_entries_are_exact_e164_strings():
+    """Live calls use numbers in this file. An empty list is tested with a temp file."""
+    for number in load_allowed_numbers():
+        assert number.startswith("+")
+        assert number == number.strip()
+        assert " " not in number
 
 
 def test_unknown_number_is_rejected_before_the_stream():

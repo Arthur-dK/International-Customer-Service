@@ -54,6 +54,34 @@
       "ar": "بطاقتك نشطة مرة أخرى. هذا رد تجريبي.",
       "sw": "Kadi yako imefunguliwa. Hii ni ujumbe wa mfano."
     },
+    "confirm_block": {
+      "en": "Do you want to block your card? Say yes or no.",
+      "fr": "Voulez-vous bloquer votre carte ? Dites oui ou non.",
+      "he": "האם לחסום את הכרטיס? אמור כן או לא.",
+      "ar": "هل تريد حظر البطاقة؟ قل نعم أو لا.",
+      "sw": "Unataka kuzuia kadi? Sema ndiyo au hapana."
+    },
+    "confirm_unblock": {
+      "en": "Do you want to unblock your card? Say yes or no.",
+      "fr": "Voulez-vous débloquer votre carte ? Dites oui ou non.",
+      "he": "האם לשחרר את הכרטיס? אמור כן או לא.",
+      "ar": "هل تريد تنشيط البطاقة؟ قل نعم أو لا.",
+      "sw": "Unataka kufungua kadi? Sema ndiyo au hapana."
+    },
+    "task_keypad": {
+      "en": "For your balance, press 1. For your PIN, press 2. For your statement, press 3. To block your card, press 4. To unblock your card, press 5.",
+      "fr": "Pour votre solde, appuyez sur 1. Pour votre code PIN, appuyez sur 2. Pour votre relevé, appuyez sur 3. Pour bloquer votre carte, appuyez sur 4. Pour débloquer votre carte, appuyez sur 5.",
+      "he": "ליתרה, הקישו 1. לפין, הקישו 2. לדוח, הקישו 3. לחסימת הכרטיס, הקישו 4. לשחרור הכרטיס, הקישו 5.",
+      "ar": "للرصيد، اضغط 1. لـ pin، اضغط 2. للكشف، اضغط 3. لحظر البطاقة، اضغط 4. لتنشيط البطاقة، اضغط 5.",
+      "sw": "Kwa salio, bonyeza 1. Kwa pin, bonyeza 2. Kwa taarifa, bonyeza 3. Kuzia kadi, bonyeza 4. Kufungua kadi, bonyeza 5."
+    },
+    "confirm_keypad": {
+      "en": "To say yes, press 1. To say no, press 2.",
+      "fr": "Pour oui, appuyez sur 1. Pour non, appuyez sur 2.",
+      "he": "לכן, הקישו 1. ללא, הקישו 2.",
+      "ar": "لنعم، اضغط 1. للا، اضغط 2.",
+      "sw": "Kwa ndiyo, bonyeza 1. Kwa hapana, bonyeza 2."
+    },
     "goodbye": {
       "en": "Goodbye.",
       "fr": "Au revoir.",
