@@ -18,7 +18,13 @@ DID_NOT_CATCH = "did_not_catch"
 MAIN_MENU = "main_menu"
 PLACEHOLDER_BALANCE = "placeholder_balance"
 PLACEHOLDER_PIN = "placeholder_pin"
+PLACEHOLDER_STATEMENT = "placeholder_statement"
 PLACEHOLDER_BLOCKED = "placeholder_blocked"
+PLACEHOLDER_UNBLOCKED = "placeholder_unblocked"
+CONFIRM_BLOCK = "confirm_block"
+CONFIRM_UNBLOCK = "confirm_unblock"
+TASK_KEYPAD = "task_keypad"
+CONFIRM_KEYPAD = "confirm_keypad"
 GOODBYE = "goodbye"
 
 

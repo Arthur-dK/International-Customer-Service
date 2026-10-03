@@ -36,7 +36,7 @@ Product and platform work that must exist regardless of which intent model is ch
 - Card/account lookup, security and privacy constraints, deploy and tests
 - Channel behaviour for IVR, SMS, and email **with a swappable intent interface**
 
-Detail for this segment lives under [`docs/software-engineering/`](docs/software-engineering/): feature notes ([FEAT-01](docs/software-engineering/features/FEAT-01.md), [FEAT-02](docs/software-engineering/features/FEAT-02.md), [FEAT-03](docs/software-engineering/features/FEAT-03.md)) and [ADRs](docs/software-engineering/adr/). File-by-file map: [`docs/code-files.md`](docs/code-files.md). Deploy: [`docs/deploy-vps.md`](docs/deploy-vps.md).
+Detail for this segment lives under [`docs/software-engineering/`](docs/software-engineering/): feature notes ([FEAT-01](docs/software-engineering/features/FEAT-01.md), [FEAT-02](docs/software-engineering/features/FEAT-02.md), [FEAT-03](docs/software-engineering/features/FEAT-03.md)) and [ADRs](docs/software-engineering/adr/). Work held for later is in [`docs/software-engineering/later.md`](docs/software-engineering/later.md). File-by-file map: [`docs/code-files.md`](docs/code-files.md). Deploy: [`docs/deploy-vps.md`](docs/deploy-vps.md).
 
 ### 2. Data science — intent recognition only (all three channels)
 

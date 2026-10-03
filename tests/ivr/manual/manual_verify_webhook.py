@@ -1,5 +1,6 @@
 """
-Manual Phase 8 check: webhook TwiML includes from/country_code parameters.
+Manual check: an allowlisted number opens the media stream; any other number
+gets a not-recognised Say and Hangup.
 
 Usage (from repo root):
   .\\venv\\Scripts\\python.exe tests\\ivr\\manual\\manual_verify_webhook.py
@@ -19,6 +20,7 @@ if str(ROOT) not in sys.path:
 from fastapi.testclient import TestClient  # noqa: E402
 
 from app.main import app  # noqa: E402
+from core.telephony.allowlist import is_caller_allowed  # noqa: E402
 
 
 def main() -> int:
@@ -33,21 +35,27 @@ def main() -> int:
         data={"From": args.from_number} if args.from_number else {},
     )
 
-    print("Phase 8 webhook verification (manual)")
+    allowed = is_caller_allowed(args.from_number)
+    print("Webhook allowlist verification (manual)")
     print(f"  from_number = {args.from_number!r}")
+    print(f"  allowed     = {allowed}")
     print(f"  status      = {response.status_code}")
     print("  twiml:")
     print(response.text)
 
-    checks = {
-        "http_200": response.status_code == 200,
-        "has_stream": "<Stream url=" in response.text,
-        "has_from_param": 'name="from"' in response.text,
-    }
-    if args.from_number.startswith("+972"):
-        checks["has_il_country"] = 'name="country_code" value="IL"' in response.text
-    elif args.from_number.startswith("+4420"):
-        checks["has_gb_country"] = 'name="country_code" value="GB"' in response.text
+    checks = {"http_200": response.status_code == 200}
+    if allowed:
+        checks["has_stream"] = "<Stream url=" in response.text
+        checks["has_from_param"] = 'name="from"' in response.text
+        checks["no_hangup"] = "<Hangup" not in response.text
+        if args.from_number.startswith("+972"):
+            checks["has_il_country"] = 'name="country_code" value="IL"' in response.text
+        elif args.from_number.startswith("+4420"):
+            checks["has_gb_country"] = 'name="country_code" value="GB"' in response.text
+    else:
+        checks["no_stream"] = "<Stream" not in response.text
+        checks["says_not_recognised"] = "<Say " in response.text
+        checks["redirects_to_hangup"] = "/voice/hangup" in response.text
 
     failed = [name for name, ok in checks.items() if not ok]
     for name, ok in checks.items():

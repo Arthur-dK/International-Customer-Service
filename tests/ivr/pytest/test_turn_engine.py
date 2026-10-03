@@ -7,12 +7,15 @@ import asyncio
 import pytest
 
 from core.language.phrases import (
+    CONFIRM_BLOCK,
+    CONFIRM_KEYPAD,
     DID_NOT_CATCH,
     GOODBYE,
     MAIN_MENU,
     PLACEHOLDER_BALANCE,
     PLACEHOLDER_BLOCKED,
     PLACEHOLDER_PIN,
+    TASK_KEYPAD,
 )
 from services.ivr.audio import chunk_mulaw, generate_silence_mulaw, generate_tone_mulaw
 from services.ivr.phrase_cache import PhraseAudioCache
@@ -20,7 +23,7 @@ from services.ivr.placeholder_intents import map_placeholder_intent
 from services.ivr.streaming_stt import ScriptedStreamingSpeechToText
 from services.ivr.tts import ToneTextToSpeech
 from services.ivr.ttfb import CANNED_TTFB_BUDGET_MS, TtfbHarness
-from services.ivr.turn_engine import PlaceholderTurnEngine
+from services.ivr.turn_engine import PlaceholderTurnEngine, _phrase_for_transcript
 
 
 class CountingTone(ToneTextToSpeech):
@@ -35,6 +38,12 @@ class CountingTone(ToneTextToSpeech):
 
 def _utterance_mulaw() -> bytes:
     return generate_tone_mulaw(400, amplitude=0.45) + generate_silence_mulaw(400)
+
+
+def test_mixed_actions_ask_to_repeat_and_goodbye_still_ends():
+    assert _phrase_for_transcript("Can I check the balance, PIN?", "en") == DID_NOT_CATCH
+    assert _phrase_for_transcript("Can I check my PIN?", "en") == PLACEHOLDER_PIN
+    assert _phrase_for_transcript("goodbye", "en") == GOODBYE
 
 
 def test_map_placeholder_intent_english_and_french():
@@ -121,7 +130,7 @@ async def test_scripted_session_menu_then_goodbye(tmp_path):
 
 @pytest.mark.asyncio
 async def test_median_canned_ttfb_under_500ms_benchmark(tmp_path):
-    finals = ["balance", "PIN", "block card", "humming", "goodbye"]
+    finals = ["balance", "PIN", "block card", "yes", "humming", "goodbye"]
     engine, tts = await _warmed_engine(tmp_path, finals=list(finals))
     calls_after_warm = tts.calls
     outbound: asyncio.Queue[str] = asyncio.Queue()
@@ -132,6 +141,7 @@ async def test_median_canned_ttfb_under_500ms_benchmark(tmp_path):
     assert [item.phrase_id for item in results] == [
         PLACEHOLDER_BALANCE,
         PLACEHOLDER_PIN,
+        CONFIRM_BLOCK,
         PLACEHOLDER_BLOCKED,
         DID_NOT_CATCH,
         GOODBYE,
@@ -175,4 +185,67 @@ async def test_unsupported_lid_language_plays_english_menu(tmp_path):
     sent = await engine.play_phrase(MAIN_MENU, outbound)
     assert sent >= 1
     assert outbound.qsize() == sent
+
+
+@pytest.mark.asyncio
+async def test_block_confirm_yes_no_and_one_retry(tmp_path):
+    engine, _ = await _warmed_engine(tmp_path, finals=[])
+    assert engine.phrase_for_turn("please block my card") == CONFIRM_BLOCK
+    assert engine._confirm_unclear == 0
+    assert engine.phrase_for_turn("banana") == CONFIRM_BLOCK
+    assert engine.phrase_for_turn("banana") == MAIN_MENU
+    assert engine._confirm_intent is None
+
+    assert engine.phrase_for_turn("unblock the card") == "confirm_unblock"
+    assert engine.keypad_for_silence() == CONFIRM_KEYPAD
+    assert engine._confirm_unclear == 0
+    assert engine.phrase_for_digit("1") == "placeholder_unblocked"
+    assert engine.phrase_for_turn("block my card") == CONFIRM_BLOCK
+    assert engine.phrase_for_digit("2") == MAIN_MENU
+
+
+@pytest.mark.asyncio
+async def test_silence_opens_the_task_keypad_then_returns_to_the_menu(tmp_path):
+    engine, _ = await _warmed_engine(tmp_path, finals=[])
+    engine.silence_timeout_s = 0.05
+    inbound: asyncio.Queue[bytes] = asyncio.Queue()
+    outbound: asyncio.Queue[str] = asyncio.Queue()
+    dtmf: asyncio.Queue[str] = asyncio.Queue()
+    stop = asyncio.Event()
+
+    results = await engine.run_on_queues(
+        inbound_audio=inbound,
+        outbound_audio=outbound,
+        dtmf_digits=dtmf,
+        stop_event=stop,
+        play_menu=False,
+        max_turns=2,
+    )
+
+    assert [item.phrase_id for item in results] == [TASK_KEYPAD, MAIN_MENU]
+
+
+@pytest.mark.asyncio
+async def test_task_digit_four_asks_before_blocking(tmp_path):
+    engine, _ = await _warmed_engine(tmp_path, finals=[])
+    inbound: asyncio.Queue[bytes] = asyncio.Queue()
+    outbound: asyncio.Queue[str] = asyncio.Queue()
+    dtmf: asyncio.Queue[str] = asyncio.Queue()
+    stop = asyncio.Event()
+    running = asyncio.create_task(
+        engine.run_on_queues(
+            inbound_audio=inbound,
+            outbound_audio=outbound,
+            dtmf_digits=dtmf,
+            stop_event=stop,
+            play_menu=False,
+            max_turns=1,
+        )
+    )
+    await asyncio.sleep(0.05)
+    await dtmf.put("4")
+    results = await running
+
+    assert [item.phrase_id for item in results] == [CONFIRM_BLOCK]
+    assert engine._confirm_intent == "block_card"
 

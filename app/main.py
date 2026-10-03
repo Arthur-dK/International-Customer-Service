@@ -52,9 +52,20 @@ async def lifespan(_app: FastAPI):
             log.exception("IVR LID warmup failed; first call may be slow")
 
     # Do not block /health on Edge TTS or Hugging Face (load balancers / compose).
+    async def _warm_stt() -> None:
+        warm = getattr(stt, "warm_model", None)
+        if not callable(warm):
+            return
+        try:
+            await asyncio.to_thread(warm)
+            log.info("IVR STT model warmed class=%s", type(stt).__name__)
+        except Exception:
+            log.exception("IVR STT warmup failed; first utterance may be slow")
+
     warmup_tasks = (
         asyncio.create_task(_warm_audio()),
         asyncio.create_task(_warm_lid()),
+        asyncio.create_task(_warm_stt()),
     )
     yield
     for task in warmup_tasks:

@@ -58,13 +58,12 @@ async def test_windows_sapi_speaks_english_mulaw():
 @pytest.mark.skipif(not sys.platform.startswith("win"), reason="Windows SAPI only")
 def test_windows_sapi_works_under_selector_event_loop():
     """Regression: uvicorn on Windows often uses a selector loop without subprocess support."""
-    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
     async def _run():
         tts = WindowsSapiTextToSpeech()
         return await tts.synthesize("Hello from selector loop.", "en")
 
-    audio = asyncio.run(_run())
+    audio = asyncio.run(_run(), loop_factory=asyncio.SelectorEventLoop)
     assert len(audio) > 1000
     assert pcm16_rms(mulaw_to_pcm16(audio)) > 500.0
 
