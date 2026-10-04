@@ -373,3 +373,47 @@ async def test_three_invalid_dtmf_digits_abandon():
     await feeder
 
     assert result is None
+
+
+@pytest.mark.asyncio
+async def test_spoken_name_selected_when_acoustic_lid_is_unrelated():
+    """A short language name must not be dropped for silence padding or a bad LID label."""
+    from core.language.countries import CallerLocale
+    from services.ivr.audio import mulaw_to_pcm16
+    from services.ivr.language_name import spoken_name_to_language, utterance_is_too_short
+    from services.ivr.metrics import LanguageSelectionMetrics
+
+    assert spoken_name_to_language("English") == "en"
+    assert spoken_name_to_language("English.") == "en"
+    assert spoken_name_to_language("Nederlands") == "nl"
+    assert spoken_name_to_language("Ned Irland.") == "nl"
+    assert spoken_name_to_language("I would like to speak in English") == "en"
+    assert spoken_name_to_language("Det er en nedlands præt av spæt.") == "nl"
+    assert (
+        spoken_name_to_language("English Nederlands Dutch Polish Urdu Punjabi Bengali")
+        is None
+    )
+    assert utterance_is_too_short(180, 800, 400)
+    assert not utterance_is_too_short(380, 800, 400)
+
+    selector = LanguageSelector(
+        tts=ToneTextToSpeech(ms_per_char=5, min_ms=40, max_ms=80),
+        lid=_SequenceLid(["kk"]),
+        min_utterance_ms=800.0,
+        vad_config=VadConfig(rms_threshold=250, speech_start_ms=40, speech_end_ms=400),
+        name_recognizer=lambda _pcm: "nl",
+    )
+    pcm = mulaw_to_pcm16(generate_tone_mulaw(duration_ms=380, amplitude=0.6))
+    pcm += mulaw_to_pcm16(generate_silence_mulaw(duration_ms=400))
+    locale = CallerLocale(
+        e164="+447700900123",
+        country_code="GB",
+        languages=("en", "pl", "pa", "ur", "bn"),
+        prompt_language="en",
+        country_known=True,
+    )
+    metrics = LanguageSelectionMetrics(menu_languages=["en", "pl", "pa", "ur", "bn"])
+    selected = await selector._select_from_speech(pcm, metrics, locale, method="speech")
+    assert selected == "nl"
+    assert metrics.lid_backend == "language-name"
+    assert metrics.lid_language == "nl"

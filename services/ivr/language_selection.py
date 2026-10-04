@@ -6,6 +6,7 @@ import asyncio
 import base64
 import logging
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum
 from typing import Any
@@ -17,7 +18,8 @@ from core.language import (
     language_selection_prompt,
     resolve_caller_locale,
 )
-from services.ivr.audio import TWILIO_SAMPLE_RATE, chunk_mulaw
+from services.ivr.audio import TWILIO_SAMPLE_RATE, chunk_mulaw, pcm16_rms
+from services.ivr.language_name import utterance_is_too_short
 from services.ivr.lid import MAJOR_LID_LANGUAGES, LanguageIdentifier
 from services.ivr.metrics import LanguageSelectionMetrics
 from services.ivr.tts import TextToSpeech, ToneTextToSpeech
@@ -67,6 +69,7 @@ class LanguageSelector:
         outbound_chunk_ms: int = 20,
         playback_realtime: bool = True,
         max_dtmf_rounds: int = 3,
+        name_recognizer: Callable[[bytes], str | None] | None = None,
     ) -> None:
         self.tts = tts
         self.lid = lid
@@ -78,6 +81,7 @@ class LanguageSelector:
         self.outbound_chunk_ms = outbound_chunk_ms
         self.playback_realtime = playback_realtime
         self.max_dtmf_rounds = max_dtmf_rounds
+        self.name_recognizer = name_recognizer
 
     async def run(
         self,
@@ -424,13 +428,30 @@ class LanguageSelector:
     ) -> str | None:
         metrics.speech_utterances += 1
         duration_ms = _pcm16_duration_ms(pcm16)
-        if duration_ms < self.min_utterance_ms:
+        frame_bytes = int(TWILIO_SAMPLE_RATE * 0.02) * 2
+        voiced_ms = 0
+        for offset in range(0, len(pcm16), frame_bytes):
+            frame = pcm16[offset : offset + frame_bytes]
+            if pcm16_rms(frame) >= self.vad.config.rms_threshold:
+                voiced_ms += 20
+        if utterance_is_too_short(
+            voiced_ms, self.min_utterance_ms, self.vad.config.speech_end_ms
+        ):
             logger.info(
                 "Ignoring short LID utterance duration_ms=%.0f min_ms=%.0f",
                 duration_ms,
                 self.min_utterance_ms,
             )
             return None
+        named = await self._language_from_spoken_name(pcm16)
+        if named and self._name_is_acceptable(named, locale):
+            metrics.lid_backend = "language-name"
+            metrics.lid_language = named
+            metrics.lid_confidence = 0.99
+            metrics.selected_language = named
+            metrics.selection_method = method  # type: ignore[assignment]
+            logger.info("Selected spoken language name %s", named)
+            return named
         result = await self.lid.identify(pcm16)
         if result is None:
             return None
@@ -455,6 +476,24 @@ class LanguageSelector:
         metrics.selected_language = result.language
         metrics.selection_method = method  # type: ignore[assignment]
         return result.language
+
+    async def _language_from_spoken_name(self, pcm16: bytes) -> str | None:
+        if self.name_recognizer is None:
+            return None
+        try:
+            return await asyncio.to_thread(self.name_recognizer, pcm16)
+        except Exception:
+            logger.exception("Spoken language-name recognition failed")
+            return None
+
+    def _name_is_acceptable(self, language: str, locale: CallerLocale) -> bool:
+        return lid_language_acceptable(
+            language,
+            0.99,
+            locale.languages,
+            min_confidence=self.min_lid_confidence,
+            off_menu_min_confidence=self.off_menu_min_lid_confidence,
+        )
 
     async def _play_prompt(
         self,

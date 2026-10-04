@@ -19,6 +19,7 @@ from core.language import resolve_caller_locale
 from core.telephony.allowlist import is_caller_allowed
 from core.telephony.rejection import not_recognised_say
 from services.ivr.force_hangup import schedule_rejection_hangup
+from services.ivr.language_name import recognize_spoken_language_name
 from services.ivr.language_selection import CLEAR_AUDIO_SENTINEL, LanguageSelector
 from services.ivr.selection_store import set_last_language_selection
 from services.ivr.turn_engine import PlaceholderTurnEngine
@@ -211,6 +212,7 @@ async def twilio_media_stream(websocket: WebSocket):
                 min_utterance_ms=settings.IVR_MIN_LID_UTTERANCE_MS,
                 vad_config=get_vad_config(),
                 playback_realtime=settings.IVR_PLAYBACK_REALTIME,
+                name_recognizer=recognize_spoken_language_name,
             )
             result = await selector.run(
                 phone_number=phone_number,

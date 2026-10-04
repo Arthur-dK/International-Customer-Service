@@ -144,11 +144,15 @@ def sapi_grammar_recognize(mulaw: bytes, language: str) -> str:
 
 def _write_16k_pcm_wav(mulaw: bytes, path: Path) -> None:
     pcm = resample_pcm16(mulaw_to_pcm16(mulaw), TWILIO_SAMPLE_RATE, 16000)
+    _write_pcm16_wav(pcm, path, sample_rate=16000)
+
+
+def _write_pcm16_wav(pcm16: bytes, path: Path, sample_rate: int) -> None:
     with wave.open(str(path), "wb") as handle:
         handle.setnchannels(1)
         handle.setsampwidth(2)
-        handle.setframerate(16000)
-        handle.writeframes(pcm)
+        handle.setframerate(sample_rate)
+        handle.writeframes(pcm16)
 
 
 def _recognition_script(wav_name: str, culture: str, phrases: tuple[str, ...]) -> str:
