@@ -14,15 +14,19 @@ Language selection remains [FEAT-02](FEAT-02.md). Templated turns and TTFB remai
 
 ## User experience
 
-What the **caller** goes through:
+This feature decides who may continue, and which card action a sentence maps to. A number that is not on the list hears “This number is not recognised.” and the call ends before the language prompt. An allowed caller who has chosen a language gets five actions: balance, PIN, statement, block, and unblock. One action word selects that action. Two action words in one sentence do not. Balance, PIN, and statement each play one placeholder line, and the PIN line speaks no PIN. Block and unblock ask for yes or no first. About six seconds of silence opens a keypad for the same five actions.
 
-1. They dial the Twilio number. If that number is missing, anonymous, or not on the allowlist, they hear that the number is not recognised, and the call ends. They never hear the language prompt.
-2. An allowlisted caller goes through language selection ([FEAT-02](FEAT-02.md)), then a task menu for balance, PIN, statement, block, and unblock. Goodbye is not offered.
-3. They speak a sentence that contains the action word, in English, French, Hebrew, Arabic, or Swahili. Two different actions in one sentence are not understood.
-4. Balance, PIN, and statement play one canned line. The PIN line does not speak a PIN. Block and unblock ask for yes or no before the canned result.
-5. Six seconds of silence opens a keypad menu. Speech can interrupt that menu.
+### Try this
 
-What this feature **does not** do: call a live bank, record the call, or add a new speech-recognition engine for Hebrew, Arabic, or Swahili. Those languages are proven with transcripts until a later branch can hear them.
+Each line should work on a call. Anything not listed is not part of this feature.
+
+- From a number that is not allowed, you hear “This number is not recognised.” The call ends. You do not hear the language prompt.
+- From an allowed number, after you select English, you hear: “You can check your balance, check your PIN, hear your statement, block your card, or unblock your card.”
+- “Can I check the balance please?” plays the placeholder balance line, including “one hundred dollars.”
+- “Block my card”, then “yes”, plays the placeholder line that the card has been blocked. “Block my card”, then “no”, returns to the task menu.
+- About six seconds of silence on the task menu plays the keypad. Press 1 for balance, 2 for PIN, 3 for statement, 4 for block, 5 for unblock.
+- Press 2. The PIN line plays. It does not speak a PIN or any digits.
+- Press 4 or 5. You are asked to confirm. Press 1 for yes, or 2 for no.
 
 ---
 
