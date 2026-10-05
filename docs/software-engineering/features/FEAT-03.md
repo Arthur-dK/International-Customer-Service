@@ -14,17 +14,16 @@ This is the process/runbook for the latency pipeline. Language selection remains
 
 ## User experience
 
-Every FEAT document should include a section like this: what the caller hears and does, and what the feature does **not** do.
+This feature is the reply after a language is already chosen. The next thing you hear is the task menu. When you finish a sentence, the reply starts without a “one moment please” and without several seconds of silence. A sentence that is not a card request gets “Sorry, I did not catch that.” The language stays the one already chosen.
 
-After language is already chosen ([FEAT-02](FEAT-02.md)), this feature is what the caller **hears next** on a templated (not yet semantic) IVR:
+### Try this
 
-1. They hear a short **task menu** (for example: say balance, PIN, or block card). That menu does not start the “how fast did we answer?” clock.
-2. They speak a short command and pause. When their voice drops, the system treats that as the end of the sentence.
-3. They should hear a **canned reply start quickly** (target: typically under half a second after they stop, for warmed lines). Replies are placeholders (fake balance, fake PIN line, fake block) — not a live bank.
-4. Unknown wording gets a “sorry, I did not catch that” line. Saying goodbye can end the task loop on this branch.
-5. They should not hear a “one moment please” filler. They should not have language re-detected on every sentence.
+Each line should work on a call that has already selected English. Anything not listed is not part of this feature.
 
-What this feature **does not** do: understand full-sentence paraphrases, Hebrew/Arabic task copy end-to-end, caller allowlisting, or two-step block confirmation. Those belong to [FEAT-04](FEAT-04.md).
+- The line after language selection is the task menu. You do not hear “one moment please”.
+- Say “Can I check the balance please?” and pause. The balance reply starts when you stop speaking. You do not sit in silence for several seconds.
+- Say something that is not a card request, such as “What is the weather?” The reply is “Sorry, I did not catch that. Please try again.”
+- Ask for balance again after that. The call does not ask you to choose a language a second time.
 
 ---
 
@@ -136,7 +135,7 @@ Each phase is a small slice with its own tests. Do not start the next phase unti
 
 Not in this branch’s demo path, but keep in mind:
 
-| Topic | This branch | Later (Yordex-shaped) |
+| Topic | This branch | Later (company-shaped) |
 |--------|-------------|------------------------|
 | STT/TTS | Stubs + free local; easy paid cloud plug-in | Prefer on-machine models if voice must not leave the network; or a contracted cloud with DPA |
 | Cost | $0 for CI | Paid streaming only if quality/latency needs it |

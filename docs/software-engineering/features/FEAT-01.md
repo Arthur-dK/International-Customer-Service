@@ -29,15 +29,14 @@ Hook Twilio call audio into this service so later IVR logic can run on the same 
 
 ## User experience
 
-Every FEAT document should include a section like this: what the caller hears and does, and what the feature does **not** do.
+This feature keeps the answered call on a live two-way audio connection. Speech from the caller and speech from the system share that connection for the rest of the call. It does not choose a language or offer card tasks.
 
-What the **caller** goes through on this feature:
+### Try this
 
-1. They dial the Twilio number. Twilio POSTs to `/voice/incoming`.
-2. The call is connected to a live Media Stream (not a pre-recorded `<Play>` of the whole IVR). Audio can flow both ways as 8 kHz μ-law frames.
-3. On this feature alone they do not yet get a language prompt or card tasks. The pipeline is ready so later features can speak and listen on the same socket.
+Each line should work on a call from a number that is allowed through. Anything not listed is not part of this feature.
 
-What this feature **does not** do: choose a language, run LID/VAD as a product, play canned IVR menus, understand “balance” / PIN, or store the call.
+- The call stays connected while you listen and while you speak.
+- You hear the system on that live connection. You are not played one recording of a finished script and then disconnected.
 
 ---
 
