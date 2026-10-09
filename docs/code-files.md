@@ -1,6 +1,6 @@
 # Code files
 
-What each application, data, and test file in this repository does. SMS and email routers exist as placeholders; the implemented path is multi-lingual IVR over Twilio Voice plus a media-stream WebSocket.
+What each application, data, and test file in this repository does. The implemented path is multi-lingual IVR over Twilio Voice plus a media-stream WebSocket. SMS accepts a signed webhook, echoes an allowlisted text, and rejects any other non-empty text. Email is still a placeholder.
 
 Related design notes live under `docs/software-engineering/`. Hosting: `docs/deploy-vps.md`. This page is a file map, not an architecture decision record.
 
@@ -15,7 +15,7 @@ Related design notes live under `docs/software-engineering/`. Hosting: `docs/dep
 | `app/api/__init__.py` | Empty package marker for API routers. |
 | `app/api/health.py` | `GET /health` — liveness JSON used by Docker Compose and local checks. |
 | `app/api/ivr.py` | Twilio `POST /voice/incoming` (TwiML that opens a media stream) and `WebSocket /media-stream` (inbound μ-law, DTMF, language selection, then placeholder task turns). |
-| `app/api/sms.py` | Empty `/sms` router for the future multi-lingual SMS channel. |
+| `app/api/sms.py` | `POST /sms/incoming` — Twilio SMS webhook. A bad signature returns 403. A valid one returns empty TwiML, echoes an allowlisted body, or sends the not-recognised line to any other non-empty text. |
 | `app/api/email.py` | Empty `/email` router for the future translator / classifier / auto-reply channel. |
 
 ---
@@ -63,13 +63,27 @@ Related design notes live under `docs/software-engineering/`. Hosting: `docs/dep
 
 ---
 
+## SMS
+
+| File | What it does |
+|------|----------------|
+| `services/sms/signature.py` | Public URL and `X-Twilio-Signature` check for `POST /sms/incoming`. |
+| `services/sms/outbound.py` | Sends one SMS with the Twilio Messages API, off the FastAPI event loop. |
+| `services/sms/dedupe.py` | Remembers a `MessageSid` in this process after a successful send, and forgets it when the send fails. |
+
+---
+
 ## Automated tests (`pytest`)
 
 | File | What it does |
 |------|----------------|
 | `tests/test_main.py` | Asserts `/health` returns 200 and `healthy`. |
 | `tests/ivr/__init__.py` | Package marker for IVR tests. |
-| `tests/sms/__init__.py` | Empty package for future SMS tests. |
+| `tests/sms/__init__.py` | Package marker for SMS tests. |
+| `tests/sms/pytest/test_signature.py` | Signed `POST /sms/incoming` returns empty TwiML; a bad signature is 403; the body is not logged. |
+| `tests/sms/pytest/test_echo.py` | An allowlisted non-empty body is echoed once. An empty body is not sent. |
+| `tests/sms/pytest/test_rejection.py` | An unknown number gets the translated not-recognised SMS. An empty body or a picture with no caption sends nothing. |
+| `tests/sms/pytest/test_dedupe.py` | A second post of the same `MessageSid` does not send again. A failed send can be retried. |
 | `tests/email/__init__.py` | Empty package for future email tests. |
 | `tests/ivr/pytest/conftest.py` | Puts the repo root on `sys.path` and sets short, stub-friendly IVR env vars before imports. |
 | `tests/ivr/pytest/test_audio.py` | μ-law duration, energy, round-trip, 20 ms chunks, WAV write. |
@@ -94,7 +108,7 @@ Related design notes live under `docs/software-engineering/`. Hosting: `docs/dep
 
 ---
 
-## Manual IVR scripts
+## Manual scripts
 
 Runnable from the repo root (not collected as the default pytest suite). They exercise live Windows/Linux-shaped stacks or a fake Twilio client.
 
@@ -110,6 +124,10 @@ Runnable from the repo root (not collected as the default pytest suite). They ex
 | `tests/ivr/manual/manual_verify_lid.py` | Loads Fixed or SpeechBrain LID and scores fixture/English audio. |
 | `tests/ivr/manual/manual_verify_language_selection.py` | End-to-end language selection without placing a Twilio call. |
 | `tests/ivr/manual/manual_verify_smoke.py` | Readiness checklist for live-call profiles (phases 7–10); does not place a call. |
+| `tests/sms/manual/manual_verify_sms_webhook.py` | Offline check that a signed SMS POST returns empty TwiML and an unsigned POST returns 403. |
+| `tests/sms/manual/manual_verify_sms_echo.py` | Offline check that an allowlisted body would be echoed once. Does not send an SMS. |
+| `tests/sms/manual/manual_verify_sms_rejection.py` | Offline check that an unknown French number would get the French not-recognised line. Does not send an SMS. |
+| `tests/sms/manual/manual_verify_sms_dedupe.py` | Offline check that two posts of one `MessageSid` would send once. Does not send an SMS. |
 
 ---
 

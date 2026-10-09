@@ -113,6 +113,9 @@ def test_media_stream_language_selection_via_speech(monkeypatch):
         "app.api.ivr.get_lid",
         lambda: FixedLanguageIdentifier(language="pl", confidence=0.99),
     )
+    # This test is the fixed language-id path. A tone is not a spoken name,
+    # and loading Whisper here holds the selection past the wait.
+    monkeypatch.setattr("app.api.ivr.recognize_spoken_language_name", lambda _pcm: None)
 
     client = TestClient(app)
     with client.websocket_connect("/media-stream") as websocket:
