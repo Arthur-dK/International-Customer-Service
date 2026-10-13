@@ -25,6 +25,8 @@ from app.api import sms as sms_api  # noqa: E402
 from app.main import app  # noqa: E402
 from core.config import settings  # noqa: E402
 from core.telephony.allowlist import load_allowed_numbers  # noqa: E402
+from services.sms.intent import match_intent  # noqa: E402
+from services.sms.replies import reply_for  # noqa: E402
 
 _HOST = "example.ngrok-free.app"
 _URL = f"https://{_HOST}/sms/incoming"
@@ -78,7 +80,11 @@ def main() -> int:
         "empty_response": "<Response" in response.text,
         "no_message_verb": "<Message" not in response.text,
         "body_not_in_twiml": _BODY not in response.text,
-        "echoed_once": sent == [(_TWILIO, sender, _BODY)] if on_list else sent == [],
+        "replied_once": (
+            sent == [(_TWILIO, sender, reply_for(match_intent(_BODY)))]
+            if on_list
+            else sent == []
+        ),
     }
     failed = [name for name, ok in checks.items() if not ok]
     for name, ok in checks.items():
@@ -90,7 +96,7 @@ def main() -> int:
 
     print("All offline SMS echo checks passed.")
     if on_list:
-        print("A live text from this number should come back as the same characters.")
+        print("A live text from this number should get the English placeholder, not the same characters.")
     else:
         print("This number is not allowlisted, so a live text still gets no reply.")
     return 0

@@ -64,7 +64,7 @@ wheels = [
 ]
 
 [[package]]
-name = "customer-service-ai-system"
+name = "international-customer-service"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
