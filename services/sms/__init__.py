@@ -1,1 +1,1 @@
-"""SMS webhook helpers. Signature check, then an allowlisted echo."""
+"""SMS webhook helpers. Signature check, then an allowlisted placeholder reply."""

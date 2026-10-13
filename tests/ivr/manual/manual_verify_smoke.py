@@ -231,7 +231,7 @@ def main() -> int:
         print("  5. Hear the fake-balance line. Log: grammar_stt ... text='balance'")
         print("  6. ttfb_ms may be over 500 (includes Windows recognition) — expected")
         print("  7. Hangup -> STOP, no crash spam")
-        print("\nRunbook: docs/features/FEAT-03.md (Phase 8 live grammar STT)")
+        print("\nRunbook: docs/ivr/features/FEAT-03.md (Phase 8 live grammar STT)")
     elif phase == 7:
         print("  1. Trial 'press any key' if trial account — expected")
         print("  2. Hear language-selection prompt, then select (DTMF or speech)")
@@ -243,23 +243,23 @@ def main() -> int:
         print("  7. Hangup -> STOP, no crash spam")
         if phase_label == "7b":
             print("  8. French selection: real French speech OR clear English — never English-accented French")
-            print("\nRunbook: docs/features/FEAT-03.md (Phase 7b TTS voice matching)")
+            print("\nRunbook: docs/ivr/features/FEAT-03.md (Phase 7b TTS voice matching)")
         else:
-            print("\nRunbook: docs/features/FEAT-03.md (Phase 7 live smoke)")
+            print("\nRunbook: docs/ivr/features/FEAT-03.md (Phase 7 live smoke)")
     elif phase == 9:
         print("  1. Trial 'press any key' if trial account — expected")
         print("  2. Log: Playing prompt … bytes=… (bytes > 0)")
         print("  3. Hear spoken prompt (not silence / not only beeps)")
         print("  4. Speak or press digit -> language_selected / outcome=selected")
         print("  5. Hangup -> STOP, no crash spam")
-        print("\nRunbook: docs/features/FEAT-02.md (Phase 9 live smoke)")
+        print("\nRunbook: docs/ivr/features/FEAT-02.md (Phase 9 live smoke)")
     else:
         print("  1. Prompt plays (English TTS is fine for the prompt only)")
         print("  2. YOU speak French (or another language) on the handset — not SAPI")
         print("  3. Log: language_selected language=<spoken> with SpeechBrain (not fixed)")
         print("  4. Optional: DTMF still selects if speech fails")
         print("  5. Hangup -> STOP, no crash spam")
-        print("\nDefinitive runbook: docs/features/FEAT-02.md (Phase 10 live SpeechBrain)")
+        print("\nDefinitive runbook: docs/ivr/features/FEAT-02.md (Phase 10 live SpeechBrain)")
 
     if all(checks):
         print(f"\nPhase {phase_label} app profile ready. Configure Twilio + ngrok, then dial.")

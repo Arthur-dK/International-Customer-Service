@@ -71,7 +71,7 @@ Clone the app (use your repo URL):
 ```bash
 mkdir -p /opt
 cd /opt
-git clone https://github.com/YOUR_ORG/Customer-Service-AI-System.git app
+git clone https://github.com/YOUR_ORG/International-Customer-Service.git app
 cd /opt/app
 ```
 

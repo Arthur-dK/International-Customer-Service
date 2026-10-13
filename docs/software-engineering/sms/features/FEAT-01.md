@@ -1,14 +1,14 @@
-# FEAT-05 — SMS echo on the Twilio number
+# FEAT-01 — SMS echo on the Twilio number
 
 | | |
 |---|---|
-| **Feature ID** | FEAT-05 |
+| **Feature ID** | FEAT-01 |
 | **Name** | Signed SMS webhook, then an exact echo |
 | **Branch** | `feat/sms-twilio-setup` |
 | **Status** | Phases 1–4 implemented. |
 | **Target** | A text to the existing Twilio number is answered with the same characters, after the sender is allowlisted |
 
-Voice stays on [FEAT-04](FEAT-04.md). Decisions for this feature are [ADR-027](../adr/ADR-027.md) through [ADR-030](../adr/ADR-030.md).
+Voice stays on [FEAT-04](../../ivr/features/FEAT-04.md). Decisions for this feature are [ADR-001](../adr/ADR-001.md) through [ADR-004](../adr/ADR-004.md). [FEAT-02](FEAT-02.md) replaces the allowlisted echo with a placeholder intent reply.
 
 ---
 
@@ -36,28 +36,28 @@ Each phase has its own tests. Do not start the next phase until the current one 
 ### Phase 1 — Signed acknowledgement
 
 - **Goal:** Twilio can POST to `/sms/incoming`. A valid signature gets HTTP 200 and an empty `<Response/>`. A missing or invalid signature gets HTTP 403. No SMS is sent.
-- **Delivered:** `services/sms/signature.py`; `POST /sms/incoming` in [`app/api/sms.py`](../../../app/api/sms.py); the `twilio` package; [ADR-029](../adr/ADR-029.md). Logs may include `From`, `To`, and `MessageSid`, and must not include `Body`.
+- **Delivered:** `services/sms/signature.py`; `POST /sms/incoming` in [`app/api/sms.py`](../../../app/api/sms.py); the `twilio` package; [ADR-003](../adr/ADR-003.md). Logs may include `From`, `To`, and `MessageSid`, and must not include `Body`.
 - **Tests:** `tests/sms/pytest/test_signature.py`. Manual: `tests/sms/manual/manual_verify_sms_webhook.py`.
 - **Done when:** a signature over `https://<host>/sms/incoming` plus the form fields returns empty TwiML; the same fields signed as `http://` are rejected; the body string is absent from the log and from the response.
 
 ### Phase 2 — Exact echo
 
 - **Goal:** An allowlisted sender with a non-empty body receives that body back through the Messages API. The webhook still returns empty TwiML so Twilio does not send a second copy.
-- **Delivered:** `services/sms/outbound.py`; the echo call in [`app/api/sms.py`](../../../app/api/sms.py); [ADR-027](../adr/ADR-027.md). A failed Messages API call returns HTTP 500. The body is not logged.
+- **Delivered:** `services/sms/outbound.py`; the echo call in [`app/api/sms.py`](../../../app/api/sms.py); [ADR-001](../adr/ADR-001.md). A failed Messages API call returns HTTP 500. The body is not logged.
 - **Tests:** `tests/sms/pytest/test_echo.py`. Manual: `tests/sms/manual/manual_verify_sms_echo.py`.
 - **Done when:** the mocked client is called once with that exact body, `from_` equal to the inbound `To`, and `to` equal to the inbound `From`.
 
 ### Phase 3 — Rejection and silence
 
 - **Goal:** A non-empty body from any other number gets one translated “not recognised” SMS. An empty body sends nothing. Pictures are ignored.
-- **Delivered:** `_reply_body` in [`app/api/sms.py`](../../../app/api/sms.py), using `not_recognised_say` and the voice allowlist; [ADR-028](../adr/ADR-028.md).
+- **Delivered:** `_reply_body` in [`app/api/sms.py`](../../../app/api/sms.py), using `not_recognised_say` and the voice allowlist; [ADR-002](../adr/ADR-002.md).
 - **Tests:** `tests/sms/pytest/test_rejection.py`. Manual: `tests/sms/manual/manual_verify_sms_rejection.py`.
 - **Done when:** an unknown French number gets “Ce numéro n'est pas reconnu.” and not the inbound body; `Body` of `""` does not call the client; a body of spaces still follows the allowlist.
 
 ### Phase 4 — Retry dedupe
 
 - **Goal:** A second POST with the same `MessageSid` does not send again. A failed Messages API call returns HTTP 500 and forgets that sid so Twilio can retry.
-- **Delivered:** `services/sms/dedupe.py`; the sid check in [`app/api/sms.py`](../../../app/api/sms.py); [ADR-030](../adr/ADR-030.md).
+- **Delivered:** `services/sms/dedupe.py`; the sid check in [`app/api/sms.py`](../../../app/api/sms.py); [ADR-004](../adr/ADR-004.md).
 - **Tests:** `tests/sms/pytest/test_dedupe.py`. Manual: `tests/sms/manual/manual_verify_sms_dedupe.py`.
 - **Done when:** two valid posts of one sid call the client once; a failed create returns 500, and a later post of that sid can send.
 
@@ -84,7 +84,7 @@ curl.exe -X POST "https://<public-host>/sms/incoming" -d "From=+15550001111&To=+
 
 | ADR | Title | Role |
 |-----|--------|------|
-| [ADR-027](../adr/ADR-027.md) | Echo SMS through the Messages API | Phase 2 |
-| [ADR-028](../adr/ADR-028.md) | Same allowlist, translated rejection, empty body stays silent | Phase 3 |
-| [ADR-029](../adr/ADR-029.md) | Reject unsigned SMS webhook posts | Phase 1 |
-| [ADR-030](../adr/ADR-030.md) | Remember MessageSid in memory | Phase 4 |
+| [ADR-001](../adr/ADR-001.md) | Echo SMS through the Messages API | Phase 2 |
+| [ADR-002](../adr/ADR-002.md) | Same allowlist, translated rejection, empty body stays silent | Phase 3 |
+| [ADR-003](../adr/ADR-003.md) | Reject unsigned SMS webhook posts | Phase 1 |
+| [ADR-004](../adr/ADR-004.md) | Remember MessageSid in memory | Phase 4 |

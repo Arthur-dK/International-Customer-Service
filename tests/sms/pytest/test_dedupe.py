@@ -2,6 +2,7 @@
 
 from app.api import sms as sms_api
 from core.config import settings
+from services.sms.replies import UNKNOWN_REPLY
 from tests.sms.pytest.test_signature import _TOKEN, _URL, _post, _sign
 
 _SENDER = "+15550001111"
@@ -38,7 +39,7 @@ def test_second_post_of_the_same_sid_does_not_send(monkeypatch, caplog):
     assert first.status_code == 200
     assert second.status_code == 200
     assert "<Message" not in second.text
-    assert sent == [(_TWILIO, _SENDER, _BODY)]
+    assert sent == [(_TWILIO, _SENDER, UNKNOWN_REPLY)]
     assert "sms_duplicate message_sid=SM40" in caplog.text
     assert _BODY not in caplog.text
 
