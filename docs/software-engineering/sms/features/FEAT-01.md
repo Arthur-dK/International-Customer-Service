@@ -44,7 +44,7 @@ Each phase has its own tests. Do not start the next phase until the current one 
 
 - **Goal:** An allowlisted sender with a non-empty body receives that body back through the Messages API. The webhook still returns empty TwiML so Twilio does not send a second copy.
 - **Delivered:** `services/sms/outbound.py`; the echo call in [`app/api/sms.py`](../../../app/api/sms.py); [ADR-001](../adr/ADR-001.md). A failed Messages API call returns HTTP 500. The body is not logged.
-- **Tests:** `tests/sms/pytest/test_echo.py`. Manual: `tests/sms/manual/manual_verify_sms_echo.py`.
+- **Tests:** `tests/sms/pytest/test_echo_sms.py`. Manual: `tests/sms/manual/manual_verify_sms_echo.py`.
 - **Done when:** the mocked client is called once with that exact body, `from_` equal to the inbound `To`, and `to` equal to the inbound `From`.
 
 ### Phase 3 — Rejection and silence
