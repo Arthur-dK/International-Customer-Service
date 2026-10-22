@@ -13,7 +13,7 @@ from core.telephony.allowlist import is_caller_allowed
 from core.telephony.rejection import not_recognised_say
 from services.sms.dedupe import already_handled, forget_message_sid, remember_message_sid
 from services.sms.intent import match_intent
-from services.sms.language import detect_language
+from services.language import detect_language
 from services.sms.outbound import send_sms
 from services.sms.replies import reply_for
 from services.sms.signature import form_params, public_webhook_url, signature_is_valid

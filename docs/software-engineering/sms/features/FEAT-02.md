@@ -61,7 +61,7 @@ Each phase has its own tests. Do not start the next phase until the current one 
 
 - **Goal:** An allowlisted non-empty body gets the placeholder reply through the existing Messages API path in [`app/api/sms.py`](../../../app/api/sms.py).
 - **Delivered:** `_reply_body` detects the language, matches the intent, and returns the SMS catalog line. The reply log is JSON with `language`, `score`, and `intent` (`none` when nothing matched) and does not record `Body`. Empty bodies, unknown numbers, bad signatures, and duplicate `MessageSid`s stay on the FEAT-01 paths.
-- **Tests:** `tests/sms/pytest/test_echo.py`, including a no-match case and a two-action case. Rejection and dedupe tests stay green.
+- **Tests:** `tests/sms/pytest/test_echo_sms.py`, including a no-match case and a two-action case. Rejection and dedupe tests stay green.
 - **Done when:** the mocked client is called once with the placeholder, `from_` equal to inbound `To`, and `to` equal to inbound `From`. The JSON log has the language code, the detector score, and the intent id, and not the body.
 
 ### Phase 5 — Manual check

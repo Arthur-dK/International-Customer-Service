@@ -1,6 +1,6 @@
 # Code files
 
-What each application, data, and test file in this repository does. The implemented path is multi-lingual IVR over Twilio Voice plus a media-stream WebSocket. SMS accepts a signed webhook, answers an allowlisted text with an English placeholder, and rejects any other non-empty text. Email is still a placeholder.
+What each application, data, and test file in this repository does. The implemented path is multi-lingual IVR over Twilio Voice plus a media-stream WebSocket. SMS accepts a signed webhook, answers an allowlisted text with an English placeholder, and rejects any other non-empty text. Email accepts a password-protected Inbound Parse post and echoes the plain text through SendGrid. The setup steps are in `docs/software-engineering/email/features/FEAT-01.md`.
 
 IVR design notes live under `docs/ivr/`. SMS design notes live under `docs/sms/`. Work held for later stays in `docs/software-engineering/later.md`. Hosting: `docs/deploy-vps.md`. This page is a file map, not an architecture decision record.
 
@@ -16,7 +16,7 @@ IVR design notes live under `docs/ivr/`. SMS design notes live under `docs/sms/`
 | `app/api/health.py` | `GET /health` — liveness JSON used by Docker Compose and local checks. |
 | `app/api/ivr.py` | Twilio `POST /voice/incoming` (TwiML that opens a media stream) and `WebSocket /media-stream` (inbound μ-law, DTMF, language selection, then placeholder task turns). |
 | `app/api/sms.py` | `POST /sms/incoming` — Twilio SMS webhook. A bad signature returns 403. A valid one returns empty TwiML, sends an English placeholder to an allowlisted body, or sends the not-recognised line to any other non-empty text. |
-| `app/api/email.py` | Empty `/email` router for the future translator / classifier / auto-reply channel. |
+| `app/api/email.py` | `POST /email/incoming` — SendGrid Inbound Parse. A bad password returns 403. A valid plain-text body is echoed once. An empty body or a full daily cap sends nothing. |
 
 ---
 
@@ -72,7 +72,20 @@ IVR design notes live under `docs/ivr/`. SMS design notes live under `docs/sms/`
 | `services/sms/dedupe.py` | Remembers a `MessageSid` in this process after a successful send, and forgets it when the send fails. |
 | `services/sms/intent.py` | English whole-word placeholder intents for one SMS. Two actions return the earlier one. Does not send a reply. |
 | `services/sms/replies.py` | English placeholder lines for those five actions, plus the no-match sentence. Not loaded from the IVR phrase catalog. |
-| `services/sms/language.py` | Offline language id for one SMS body (`py3langid`). Blank text and a detector failure return English. Does not choose the reply. |
+| `services/language.py` | Offline language id for one text (`py3langid`). Shared by SMS and email. Blank text and a detector failure return English. Does not choose the reply. |
+| `services/sms/language.py` | Re-exports `detect_language` from `services/language.py`. |
+
+---
+
+## Email
+
+| File | What it does |
+|------|----------------|
+| `services/email/auth.py` | HTTP basic-auth check for `POST /email/incoming`, using `SENDGRID_INBOUND_USER` and `SENDGRID_INBOUND_PASSWORD`. |
+| `services/email/inbound.py` | Reads the Inbound Parse string fields into sender, recipient, subject, and plain text. File uploads are skipped. |
+| `services/email/outbound.py` | Sends one plain-text reply with the SendGrid Mail Send API, off the FastAPI event loop. |
+| `services/email/quota.py` | Counts echo sends for the current UTC day in this process, and gives a count back when the send fails. |
+| `services/email/dedupe.py` | Remembers a Message-ID after a successful echo, and forgets it when the send fails. A missing Message-ID is hashed. |
 
 ---
 
@@ -84,13 +97,16 @@ IVR design notes live under `docs/ivr/`. SMS design notes live under `docs/sms/`
 | `tests/ivr/__init__.py` | Package marker for IVR tests. |
 | `tests/sms/__init__.py` | Package marker for SMS tests. |
 | `tests/sms/pytest/test_signature.py` | Signed `POST /sms/incoming` returns empty TwiML; a bad signature is 403; the body is not logged. |
-| `tests/sms/pytest/test_echo.py` | An allowlisted text gets one English placeholder. A PIN text, two actions, and no match are covered. An empty body is not sent. |
+| `tests/sms/pytest/test_echo_sms.py` | An allowlisted text gets one English placeholder. A PIN text, two actions, and no match are covered. An empty body is not sent. |
 | `tests/sms/pytest/test_rejection.py` | An unknown number gets the translated not-recognised SMS. An empty body or a picture with no caption sends nothing. |
 | `tests/sms/pytest/test_dedupe.py` | A second post of the same `MessageSid` does not send again. A failed send can be retried. |
 | `tests/sms/pytest/test_intent.py` | English SMS keywords route to one card action. Two actions return the earlier one. Blank and unknown text do not match. |
 | `tests/sms/pytest/test_replies.py` | Each SMS action has its own English placeholder. The PIN line has no digits. The lines are not in the IVR catalog. |
 | `tests/sms/pytest/test_language.py` | Obvious English, French, and Hebrew sentences get a language code offline, in under four seconds. Blank text and a detector failure are English. |
-| `tests/email/__init__.py` | Empty package for future email tests. |
+| `tests/email/__init__.py` | Package marker for email tests. |
+| `tests/email/pytest/test_incoming.py` | A matching basic-auth password returns 200; a bad password is 403; the plain-text body is not logged. |
+| `tests/email/pytest/test_echo_email.py` | One plain-text email is echoed once. An empty body is not sent. A second email past the daily cap is not sent. |
+| `tests/email/pytest/test_dedupe.py` | A second post of the same Message-ID does not send again. A failed send can be retried. |
 | `tests/ivr/pytest/conftest.py` | Puts the repo root on `sys.path` and sets short, stub-friendly IVR env vars before imports. |
 | `tests/ivr/pytest/test_audio.py` | μ-law duration, energy, round-trip, 20 ms chunks, WAV write. |
 | `tests/ivr/pytest/test_vad.py` | Noise ignore, speech start/end, reset, Twilio-sized frames. |
@@ -131,6 +147,9 @@ Runnable from the repo root (not collected as the default pytest suite). They ex
 | `tests/ivr/manual/manual_verify_language_selection.py` | End-to-end language selection without placing a Twilio call. |
 | `tests/ivr/manual/manual_verify_smoke.py` | Readiness checklist for live-call profiles (phases 7–10); does not place a call. |
 | `tests/sms/manual/manual_verify_sms_webhook.py` | Offline check that a signed SMS POST returns empty TwiML and an unsigned POST returns 403. |
+| `tests/email/manual/manual_verify_email_webhook.py` | Offline check that a matching inbound password returns 200 and a wrong password returns 403. Does not send email. |
+| `tests/email/manual/manual_verify_email_echo.py` | Offline check that one plain-text post would be echoed once. Does not send email. |
+| `tests/email/manual/manual_verify_email_reply.py` | Offline check that one French plain-text post would be echoed once, the log has a language code and a score, and a repeat would not send again. Does not send email. |
 | `tests/sms/manual/manual_verify_sms_echo.py` | Offline check that an allowlisted body would get one placeholder reply. Does not send an SMS. |
 | `tests/sms/manual/manual_verify_sms_rejection.py` | Offline check that an unknown French number would get the French not-recognised line. Does not send an SMS. |
 | `tests/sms/manual/manual_verify_sms_dedupe.py` | Offline check that two posts of one `MessageSid` would send once. Does not send an SMS. |

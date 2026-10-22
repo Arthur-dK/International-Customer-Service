@@ -1,7 +1,7 @@
 import socket
 import time
 
-from services.sms.language import detect_language
+from services.language import detect_language
 
 _ENGLISH = "Please tell me the balance on my card today."
 _FRENCH = "Bonjour, je voudrais connaitre le solde de ma carte."
@@ -25,7 +25,7 @@ def test_detector_failure_is_english(monkeypatch):
     def fail(text: str):
         raise RuntimeError("detector down")
 
-    monkeypatch.setattr("services.sms.language.py3langid.classify", fail)
+    monkeypatch.setattr("services.language.py3langid.classify", fail)
     assert detect_language(_ENGLISH)[0] == "en"
 
 

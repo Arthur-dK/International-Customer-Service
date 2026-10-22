@@ -11,6 +11,12 @@ class Settings(BaseSettings):
     # Telephony & External Webhooks
     TWILIO_ACCOUNT_SID: str = "mock_sid"
     TWILIO_AUTH_TOKEN: str = "mock_token"
+    # SendGrid Inbound Parse basic auth. Empty values reject every post.
+    SENDGRID_API_KEY: str = ""
+    SENDGRID_INBOUND_USER: str = ""
+    SENDGRID_INBOUND_PASSWORD: str = ""
+    # Stay under the trial's 100 sends per day.
+    EMAIL_DAILY_SEND_CAP: int = 60
 
     # AI Engine Config
     OLLAMA_BASE_URL: str = "http://localhost:11434"

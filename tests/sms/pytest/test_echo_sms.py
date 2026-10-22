@@ -4,7 +4,7 @@ import json
 
 from app.api import sms as sms_api
 from core.config import settings
-from services.sms.language import detect_language
+from services.language import detect_language
 from services.sms.replies import UNKNOWN_REPLY, reply_for
 from services.sms.intent import BLOCK_CARD, GET_PIN
 from tests.sms.pytest.test_signature import _TOKEN, _URL, _post, _sign
