@@ -86,6 +86,7 @@ IVR design notes live under `docs/ivr/`. SMS design notes live under `docs/sms/`
 | `services/email/outbound.py` | Sends one plain-text reply with the SendGrid Mail Send API, off the FastAPI event loop. |
 | `services/email/quota.py` | Counts echo sends for the current UTC day in this process, and gives a count back when the send fails. |
 | `services/email/dedupe.py` | Remembers a Message-ID after a successful echo, and forgets it when the send fails. A missing Message-ID is hashed. |
+| `services/email/intent.py` | English whole-word placeholder intents for one email. Two actions match nothing. Does not send a reply. |
 
 ---
 
@@ -105,6 +106,7 @@ IVR design notes live under `docs/ivr/`. SMS design notes live under `docs/sms/`
 | `tests/sms/pytest/test_language.py` | Obvious English, French, and Hebrew sentences get a language code offline, in under four seconds. Blank text and a detector failure are English. |
 | `tests/email/__init__.py` | Package marker for email tests. |
 | `tests/email/pytest/test_incoming.py` | A matching basic-auth password returns 200; a bad password is 403; the plain-text body is not logged. |
+| `tests/email/pytest/test_intent.py` | English email keywords route to one card action. Two actions match nothing. Blank and unknown text do not match. |
 | `tests/email/pytest/test_echo_email.py` | One plain-text email is echoed once. An empty body is not sent. A second email past the daily cap is not sent. |
 | `tests/email/pytest/test_dedupe.py` | A second post of the same Message-ID does not send again. A failed send can be retried. |
 | `tests/ivr/pytest/conftest.py` | Puts the repo root on `sys.path` and sets short, stub-friendly IVR env vars before imports. |
