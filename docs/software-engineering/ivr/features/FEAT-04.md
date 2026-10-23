@@ -45,7 +45,7 @@ Each phase has its own tests. Do not start the next phase until the current one 
 
 - **Goal:** A transcript in the selected language maps to one of the five actions, or to no match.
 - **Delivered:** `services/ivr/intent_router.py`; [ADR-021](../adr/ADR-021.md). After language selection, the turn engine uses `route_intent`. The older mapper is only for goodbye. A sentence with two actions asks the caller to repeat.
-- **Tests:** `tests/ivr/pytest/test_intent_router.py`.
+- **Tests:** `tests/ivr/pytest/test_intent_ivr.py`.
 - **Done when:** varied sentences in English, French, Hebrew, Arabic, and Swahili route when they contain that language's keyword as a whole word; unblock does not match block; two actions do not match.
 
 ### Phase 3 — Phrase catalog

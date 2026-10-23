@@ -23,6 +23,7 @@ from app.main import app  # noqa: E402
 from core.config import settings  # noqa: E402
 from services.email import outbound  # noqa: E402
 from services.email.quota import clear_quota  # noqa: E402
+from services.email.replies import UNKNOWN_REPLY  # noqa: E402
 
 _TEXT = "phase-3-manual"
 _DATA = {
@@ -72,7 +73,7 @@ def main() -> int:
         "to_sender": message.get("personalizations") == [
             {"to": [{"email": "sender@example.com"}]}
         ],
-        "exact_text": content == _TEXT,
+        "exact_text": content == UNKNOWN_REPLY,
         "text_not_in_response": _TEXT not in response.text,
     }
     failed = [name for name, ok in checks.items() if not ok]

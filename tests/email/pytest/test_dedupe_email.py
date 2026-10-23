@@ -8,6 +8,7 @@ from fastapi.testclient import TestClient
 from app.main import app
 from core.config import settings
 from services.email.quota import clear_quota
+from services.email.replies import UNKNOWN_REPLY
 
 client = TestClient(app)
 
@@ -63,7 +64,7 @@ def test_second_post_of_the_same_message_id_does_not_send(monkeypatch, caplog):
     assert first.status_code == 200
     assert second.status_code == 200
     assert len(calls) == 1
-    assert calls[0]["content"] == [{"type": "text/plain", "value": _TEXT}]
+    assert calls[0]["content"] == [{"type": "text/plain", "value": UNKNOWN_REPLY}]
     assert "email_duplicate message_id=<same@mail.example>" in caplog.text
     assert _TEXT not in caplog.text
 

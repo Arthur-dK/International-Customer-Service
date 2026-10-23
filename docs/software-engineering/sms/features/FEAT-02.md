@@ -40,7 +40,7 @@ Each phase has its own tests. Do not start the next phase until the current one 
 
 - **Goal:** A text maps to one of the five actions, or to none, without Twilio.
 - **Delivered:** `services/sms/intent.py`; [ADR-005](../adr/ADR-005.md). Whole-token English keywords. Two actions return the earlier token. The webhook is unchanged.
-- **Tests:** `tests/sms/pytest/test_intent.py`.
+- **Tests:** `tests/sms/pytest/test_intent_sms.py`.
 - **Done when:** varied English sentences route; two actions return the earlier one; empty, unknown, and punctuation-only text return none.
 
 ### Phase 2 — SMS reply catalog

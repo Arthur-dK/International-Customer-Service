@@ -1,4 +1,4 @@
-"""Phase 3: a plain-text email is echoed once through Mail Send."""
+"""A plain-text email gets one English placeholder through Mail Send."""
 
 import base64
 
@@ -8,6 +8,8 @@ from fastapi.testclient import TestClient
 from app.main import app
 from core.config import settings
 from services.email.quota import clear_quota
+from services.email.replies import UNKNOWN_REPLY, reply_for
+from services.email.intent import GET_PIN
 
 client = TestClient(app)
 
@@ -54,7 +56,7 @@ def _capture(monkeypatch) -> list[dict]:
     return calls
 
 
-def test_echoes_exact_plain_text(monkeypatch, caplog):
+def test_pin_gets_the_placeholder(monkeypatch, caplog):
     _configure(monkeypatch)
     calls = _capture(monkeypatch)
     with caplog.at_level("INFO"):
@@ -66,20 +68,40 @@ def test_echoes_exact_plain_text(monkeypatch, caplog):
     assert response.status_code == 200
     assert len(calls) == 1
     message = calls[0]["json"]
+    pin_line = reply_for(GET_PIN)
     assert message["from"] == {"email": "echo@internationalivr.xyz"}
     assert message["personalizations"] == [{"to": [{"email": "sender@example.com"}]}]
     assert message["subject"] == "Re: Hello there"
-    assert message["content"] == [{"type": "text/plain", "value": _TEXT}]
+    assert message["content"] == [{"type": "text/plain", "value": pin_line}]
+    assert "9876" not in pin_line
     assert calls[0]["headers"]["Authorization"] == "Bearer test-key"
     assert calls[0]["url"] == "https://api.sendgrid.com/v3/mail/send"
     assert '"event": "email_reply"' in caplog.text
     assert '"from": "echo@internationalivr.xyz"' in caplog.text
     assert '"to": "sender@example.com"' in caplog.text
+    assert '"intent": "get_pin"' in caplog.text
+    assert '"score":' in caplog.text
     assert _TEXT not in caplog.text
     assert _SUBJECT not in caplog.text
 
 
-def test_french_reply_logs_french_and_keeps_the_text(monkeypatch, caplog):
+def test_two_actions_get_the_unknown_line(monkeypatch, caplog):
+    inbound = "block and balance"
+    _configure(monkeypatch)
+    calls = _capture(monkeypatch)
+    with caplog.at_level("INFO"):
+        response = client.post(
+            "/email/incoming",
+            headers={"authorization": _auth()},
+            data=_payload(text=inbound),
+        )
+    assert response.status_code == 200
+    assert calls[0]["json"]["content"] == [{"type": "text/plain", "value": UNKNOWN_REPLY}]
+    assert '"intent": "none"' in caplog.text
+    assert inbound not in caplog.text
+
+
+def test_french_reply_logs_french_and_sends_the_unknown_line(monkeypatch, caplog):
     french = "Bonjour, je voudrais connaitre le solde de ma carte."
     _configure(monkeypatch)
     calls = _capture(monkeypatch)
@@ -90,9 +112,10 @@ def test_french_reply_logs_french_and_keeps_the_text(monkeypatch, caplog):
             data=_payload(text=french),
         )
     assert response.status_code == 200
-    assert calls[0]["json"]["content"] == [{"type": "text/plain", "value": french}]
+    assert calls[0]["json"]["content"] == [{"type": "text/plain", "value": UNKNOWN_REPLY}]
     assert '"language": "fr"' in caplog.text
     assert '"language": "en"' not in caplog.text
+    assert '"intent": "none"' in caplog.text
     assert french not in caplog.text
 
 

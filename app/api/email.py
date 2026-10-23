@@ -1,4 +1,4 @@
-"""SendGrid Inbound Parse webhook. A valid password may echo the plain text."""
+"""SendGrid Inbound Parse webhook. A valid password may send one English placeholder."""
 
 from __future__ import annotations
 
@@ -11,8 +11,10 @@ from fastapi.responses import Response
 from services.email.auth import basic_auth_is_valid
 from services.email.dedupe import already_handled, delivery_key, forget_message, remember_message
 from services.email.inbound import form_params, parse_inbound
+from services.email.intent import match_intent
 from services.email.outbound import reply_subject, send_email
 from services.email.quota import release, try_reserve
+from services.email.replies import reply_for
 from services.language import detect_language
 
 logger = logging.getLogger(__name__)
@@ -25,10 +27,10 @@ async def email_incoming(request: Request):
     """
     SendGrid Inbound Parse.
     A missing or wrong basic-auth password is HTTP 403.
-    A valid post with plain text echoes that text once, from the inbound recipient.
+    A valid post with plain text sends one English placeholder, from the inbound recipient.
     An empty body, a missing address, or a full daily cap returns 200 and sends nothing.
     A repeated message does not send again. A failed send returns 500 and can be retried.
-    The language code and score are logged. The plain-text body and the subject are not logged.
+    The language code, the score, and the intent id are logged. The plain-text body and the subject are not logged.
     """
     form = await request.form()
     params = form_params(form)
@@ -52,6 +54,7 @@ async def email_incoming(request: Request):
         logger.info("email_duplicate message_id=%s", message_key)
         return Response(status_code=200)
     language, score = detect_language(incoming.text)
+    intent = match_intent(incoming.text)
     if not try_reserve():
         logger.info("email_cap_reached to=%s", incoming.recipient)
         return Response(status_code=200)
@@ -60,7 +63,7 @@ async def email_incoming(request: Request):
             from_email=incoming.recipient,
             to_email=incoming.sender,
             subject=reply_subject(incoming.subject),
-            body=incoming.text,
+            body=reply_for(intent),
         )
     except Exception as exc:
         release()
@@ -76,6 +79,7 @@ async def email_incoming(request: Request):
                 "to": incoming.sender,
                 "language": language,
                 "score": score,
+                "intent": intent or "none",
             }
         )
     )

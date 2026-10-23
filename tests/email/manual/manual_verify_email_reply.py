@@ -1,7 +1,7 @@
 """
-Manual check: one French plain-text post is echoed once, the log has a
-language code and a score, and a second post of the same Message-ID does
-not send again. The HTTP call is replaced, so this script does not send
+Manual check: one French plain-text post gets the unknown line once, the log
+has a language code and a score, and a second post of the same Message-ID
+does not send again. The HTTP call is replaced, so this script does not send
 an email.
 
 Usage (from repo root):
@@ -28,6 +28,7 @@ from core.config import settings  # noqa: E402
 from services.email import outbound  # noqa: E402
 from services.email.dedupe import clear_seen_messages  # noqa: E402
 from services.email.quota import clear_quota  # noqa: E402
+from services.email.replies import UNKNOWN_REPLY  # noqa: E402
 
 _TEXT = "Bonjour, je voudrais connaitre le solde de ma carte."
 _MESSAGE_ID = "<phase-6@mail.example>"
@@ -94,7 +95,7 @@ def main() -> int:
         "first_200": first.status_code == 200,
         "second_200": second.status_code == 200,
         "one_send": len(calls) == 1,
-        "exact_text": content == _TEXT,
+        "exact_text": content == UNKNOWN_REPLY,
         "language_fr": reply.get("language") == "fr",
         "score_is_number": isinstance(reply.get("score"), (int, float)),
         "body_not_in_log": _TEXT not in log_text,

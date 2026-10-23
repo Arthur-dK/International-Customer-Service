@@ -8,7 +8,7 @@
 | **Status** | Phases 1–6 implemented. |
 | **Target** | A plain-text email to `echo@inbox.<your-domain>` is answered with that same plain text |
 
-Voice stays on [FEAT-04](../../ivr/features/FEAT-04.md). SMS stays on [FEAT-02](../../sms/features/FEAT-02.md). The account and hostname decision is [ADR-001](../adr/ADR-001.md). The webhook password check is [ADR-002](../adr/ADR-002.md). The plain-text echo is [ADR-003](../adr/ADR-003.md). Language detection is [ADR-004](../adr/ADR-004.md). Retry dedupe is [ADR-005](../adr/ADR-005.md).
+Voice stays on [FEAT-04](../../ivr/features/FEAT-04.md). SMS stays on [FEAT-02](../../sms/features/FEAT-02.md). [FEAT-02](FEAT-02.md) replaces the plain-text echo with a placeholder intent reply. The account and hostname decision is [ADR-001](../adr/ADR-001.md). The webhook password check is [ADR-002](../adr/ADR-002.md). The plain-text echo is [ADR-003](../adr/ADR-003.md). Language detection is [ADR-004](../adr/ADR-004.md). Retry dedupe is [ADR-005](../adr/ADR-005.md).
 
 ---
 

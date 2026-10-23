@@ -1,1 +1,1 @@
-"""Email webhook helpers. Basic auth, then a plain-text echo."""
+"""Email webhook helpers. Basic auth, then one English placeholder reply."""
