@@ -47,7 +47,7 @@ Each phase has its own tests. Do not start the next phase until the current one 
 
 - **Goal:** Each action and the no-match case have one English line that the IVR catalog does not own.
 - **Delivered:** `services/sms/replies.py`; [ADR-007](../adr/ADR-007.md). The five action lines and the no-match sentence are plain strings in that module. The webhook is unchanged.
-- **Tests:** `tests/sms/pytest/test_replies.py`.
+- **Tests:** `tests/sms/pytest/test_replies_sms.py`.
 - **Done when:** the five lines differ, the PIN line has no digits, the no-match line is the sentence above, and [`core/language/phrases.json`](../../../core/language/phrases.json) is untouched.
 
 ### Phase 3 — Language detection

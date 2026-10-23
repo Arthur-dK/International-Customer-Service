@@ -1,0 +1,32 @@
+"""English placeholder replies for one email.
+
+These lines are not read from the IVR phrase catalog and are not imported
+from SMS. They contain no real PIN, balance, or card status.
+"""
+
+from __future__ import annotations
+
+from services.email.intent import (
+    BLOCK_CARD,
+    GET_BALANCE,
+    GET_CARD_STATEMENT,
+    GET_PIN,
+    UNBLOCK_CARD,
+)
+
+UNKNOWN_REPLY = "I didn't understand what you meant by that."
+
+_REPLIES: dict[str, str] = {
+    GET_BALANCE: "I confirm you wish to check the balance. This is a placeholder.",
+    GET_PIN: "I confirm you wish to check the PIN. This is a placeholder.",
+    GET_CARD_STATEMENT: "I confirm you wish to check the statement. This is a placeholder.",
+    BLOCK_CARD: "I confirm you wish to block the card. This is a placeholder.",
+    UNBLOCK_CARD: "I confirm you wish to unblock the card. This is a placeholder.",
+}
+
+
+def reply_for(intent: str | None) -> str:
+    """English line for one action id, or the no-match line when there is none."""
+    if intent is None:
+        return UNKNOWN_REPLY
+    return _REPLIES[intent]

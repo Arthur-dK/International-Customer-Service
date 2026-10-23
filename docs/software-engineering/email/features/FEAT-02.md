@@ -5,10 +5,10 @@
 | **Feature ID** | FEAT-02 |
 | **Name** | One-shot English keyword intents on the inbound mailbox |
 | **Branch** | `feat/email-stub-intent-router` |
-| **Status** | Phase 1 implemented. Phases 2–4 are not started. |
+| **Status** | Phases 1–2 implemented. Phases 3–4 are not started. |
 | **Target** | A plain-text email is answered once with an English placeholder for one card action, or with a short line when the request is not understood |
 
-The password check, plain-text parsing, language log, Message-ID dedupe, and daily cap stay on [FEAT-01](FEAT-01.md). Voice stays on [FEAT-04](../../ivr/features/FEAT-04.md). SMS stays on [FEAT-02](../../sms/features/FEAT-02.md). The keyword decision for this feature is [ADR-006](../adr/ADR-006.md). The reply catalog is added in Phase 2.
+The password check, plain-text parsing, language log, Message-ID dedupe, and daily cap stay on [FEAT-01](FEAT-01.md). Voice stays on [FEAT-04](../../ivr/features/FEAT-04.md). SMS stays on [FEAT-02](../../sms/features/FEAT-02.md). The keyword decision is [ADR-006](../adr/ADR-006.md). The reply lines are [ADR-007](../adr/ADR-007.md).
 
 ---
 
@@ -24,7 +24,7 @@ An empty plain-text part still gets no reply. A bad password still gets no mail.
 
 The language of the text is still detected before the reply is chosen. The detected language does not change the keywords or the English reply. The reply log is JSON and may include the language code, the detector score, and the intent id. It must not include the message body or the subject.
 
-Until Phase 3, the webhook still echoes the plain text. Phase 1 only maps a string to an action id.
+Until Phase 3, the webhook still echoes the plain text. Phase 2 only stores the reply lines. It does not send them.
 
 ---
 
@@ -42,8 +42,8 @@ Each phase has its own tests. Do not start the next phase until the current one 
 ### Phase 2 — Email reply catalog
 
 - **Goal:** Each action and the no-match case have one English line that the IVR catalog and the SMS catalog do not own.
-- **Not started.** Will add `services/email/replies.py` and ADR-007. The five action lines and the no-match sentence are plain strings in that module. The webhook stays unchanged.
-- **Tests:** `tests/email/pytest/test_replies.py`.
+- **Delivered:** `services/email/replies.py`; [ADR-007](../adr/ADR-007.md). The five action lines and the no-match sentence are plain strings in that module. The webhook is unchanged.
+- **Tests:** `tests/email/pytest/test_replies_email.py`.
 - **Done when:** the five lines differ, the PIN line has no digits, the no-match line is the sentence above, and [`core/language/phrases.json`](../../../core/language/phrases.json) is untouched.
 
 ### Phase 3 — Remove the echo
@@ -66,3 +66,4 @@ Each phase has its own tests. Do not start the next phase until the current one 
 | ADR | Title | Role |
 |-----|--------|------|
 | [ADR-006](../adr/ADR-006.md) | English whole-word email intents, two actions are no match | Phase 1 |
+| [ADR-007](../adr/ADR-007.md) | Email-owned English placeholders | Phase 2 |
