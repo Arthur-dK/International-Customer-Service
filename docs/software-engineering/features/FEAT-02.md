@@ -33,7 +33,8 @@ This feature chooses the language for the rest of the call. The first prompt ask
 
 Each line should work on a call from a number that is allowed through. Anything not listed is not part of this feature.
 
-- The first thing you are asked is the name of the language you want.
+- The first thing you are asked is the name of the language you want. The language that is spoken depends on the country being called from.
+- The languages currently supported include: "Afrikaans, Amharic, Arabic (several variants), Bengali, Bulgarian, Cantonese, Catalan, Czech, Danish, Dutch, English, Filipino, Finnish, French, German, Greek, Gujarati, Hebrew, Hindi, Hungarian, Icelandic, Indonesian, Italian, Japanese, Kannada, Korean, Latvian, Malay, Malayalam, Mandarin, Marathi, Norwegian, Polish, Portuguese, Punjabi, Romanian, Russian, Serbian, Slovak, Spanish, Swedish, Tamil, Telugu, Thai, Turkish, Ukrainian, Vietnamese, Welsh"
 - After that prompt finishes, say “English”. The task menu that follows is in English.
 - Stay silent instead. The keypad menu names a digit for English. Press that digit. The task menu that follows is in English.
 
