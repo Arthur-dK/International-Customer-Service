@@ -385,7 +385,7 @@ class LanguageSelector:
 
             if play_task.done():
                 # Burst mode finishes enqueue instantly while Twilio still plays the
-                # menu for many seconds — keep listening for the full audio duration
+                # menu for many seconds - keep listening for the full audio duration
                 # plus silence, or the menu restarts while the caller is still hearing it.
                 try:
                     mulaw_bytes = int(play_task.result() or 0)

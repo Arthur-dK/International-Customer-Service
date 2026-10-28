@@ -156,7 +156,7 @@ def main() -> int:
 
     print(
         "All offline checks passed. Compare padded_with_long_silence.wav vs "
-        "vad_captured_utterance.wav — the duration difference should be obvious."
+        "vad_captured_utterance.wav - the duration difference should be obvious."
     )
     return 0
 

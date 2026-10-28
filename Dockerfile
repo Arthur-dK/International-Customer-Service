@@ -1,5 +1,5 @@
 # Production image: Python 3.12 + CPU Torch + SpeechBrain LID (VoxLingua107).
-# Target: a VPS (Hetzner or similar) via docker compose — not a RAM-capped PaaS.
+# Target: a VPS (Hetzner or similar) via docker compose - not a RAM-capped PaaS.
 FROM python:3.12.8-slim-bookworm
 
 WORKDIR /app

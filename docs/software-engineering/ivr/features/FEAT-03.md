@@ -1,4 +1,4 @@
-# FEAT-03 — Streaming voice path and TTFB (templated IVR)
+# FEAT-03 - Streaming voice path and TTFB (templated IVR)
 
 | | |
 |---|---|
@@ -8,22 +8,7 @@
 | **Status** | Implemented (Phases 1–8) + Phase 7b |
 | **Target** | After the caller stops talking, canned reply audio starts sending in under ~0.5s |
 
-This is the process/runbook for the latency pipeline. Language selection remains [FEAT-02](FEAT-02.md). Architectural decisions for this feature start at [ADR-011](../adr/ADR-011.md).
-
----
-
-## User experience
-
-This feature is the reply after a language is already chosen. The next thing you hear is the task menu. When you finish a sentence, the reply starts without a “one moment please” and without several seconds of silence. A sentence that is not a card request gets “Sorry, I did not catch that.” The language stays the one already chosen.
-
-### Try this
-
-Each line should work on a call that has already selected English. Anything not listed is not part of this feature.
-
-- The line after language selection is the task menu. You do not hear “one moment please”.
-- Say “Can I check the balance please?” and pause. The balance reply starts when you stop speaking. You do not sit in silence for several seconds.
-- Say something that is not a card request, such as “What is the weather?” The reply is “Sorry, I did not catch that. Please try again.”
-- Ask for balance again after that. The call does not ask you to choose a language a second time.
+What a caller should hear is [the phone requirements](../../../requirements/ivr_requirements.md). This note is the build log for the latency pipeline. Language selection remains [FEAT-02](FEAT-02.md). Caller-facing tasks are [FEAT-04](FEAT-04.md). Architectural decisions for this feature start at [ADR-011](../adr/ADR-011.md).
 
 ---
 
@@ -46,7 +31,7 @@ Each line should work on a call that has already selected English. Anything not 
 |---|---|
 | Stopwatch **starts** | Caller has stopped talking (voice volume dropped → VAD `speech_end`) |
 | Stopwatch **stops** | System **starts sending** reply audio outbound |
-| Canned replies | **Usually** (median) ≤ 500 ms — one slow outlier does not fail the SLO |
+| Canned replies | **Usually** (median) ≤ 500 ms - one slow outlier does not fail the SLO |
 | Future LLM replies | Usually ≤ 5 s (not built here) |
 
 ---
@@ -55,22 +40,22 @@ Each line should work on a call that has already selected English. Anything not 
 
 Each phase is a small slice with its own tests. Do not start the next phase until the current one is green.
 
-### Phase 1 — TTFB timer harness
+### Phase 1 - TTFB timer harness
 
 - **Goal:** One shared stopwatch with a frozen definition of start/stop, budgets, and “typical” (median) canned SLO.
 - **Delivered:** `services/ivr/ttfb.py`; [ADR-011](../adr/ADR-011.md).
 - **Tests:** `tests/ivr/pytest/test_ttfb.py` (fake clock; no Twilio, no vendors).
 - **Done when:** pytest for TTFB passes; harness is not yet wired into live calls.
 
-### Phase 2 — Phrase catalog + instant cache
+### Phase 2 - Phrase catalog + instant cache
 
 - **Goal:** Menus, errors, and placeholder-task lines have stable **phrase IDs**. Hot path is “look up ready audio,” not “ask TTS again.”
 - **Delivered:** `core/language/phrases.json`, `core/language/phrases.py`, `services/ivr/phrase_cache.py`; [ADR-012](../adr/ADR-012.md). App startup warms English (and French when TTS can speak it).
-- **Tests:** `tests/ivr/pytest/test_phrase_cache.py` — cache hit does not call the synthesizer; English + French fixtures; ready lookup TTFB is dict-only.
+- **Tests:** `tests/ivr/pytest/test_phrase_cache.py` - cache hit does not call the synthesizer; English + French fixtures; ready lookup TTFB is dict-only.
 - **Depends on:** Phase 1 only for the lookup TTFB check.
 - **Done when:** pytest for phrases passes. Language selector still uses text TTS for dynamic DTMF menus.
 
-### Phase 3 — Streaming TTS interface + free stub
+### Phase 3 - Streaming TTS interface + free stub
 
 - **Goal:** TTS can emit μ-law **chunks**. First chunk is `mark_first_audio_byte`. Stub/tone (and later Piper) work without a paid API.
 - **Delivered:** `services/ivr/streaming_tts.py`; [ADR-013](../adr/ADR-013.md). `ToneStreamingTextToSpeech` stub; `BatchStreamingTextToSpeech` wraps existing engines; `stream_ready_phrase` for warmed catalog lines; `enqueue_tts_stream` for outbound + TTFB.
@@ -78,37 +63,37 @@ Each phase is a small slice with its own tests. Do not start the next phase unti
 - **Later swap:** paid streaming TTS (e.g. Cartesia) implements the same protocol. In-house: stream from a local engine on that protocol.
 - **Done when:** pytest for streaming TTS passes. Not yet wired into live Twilio playback.
 
-### Phase 4 — Streaming STT interface + free stub
+### Phase 4 - Streaming STT interface + free stub
 
 - **Goal:** Inbound audio can be transcribed through a **StreamingSTT** protocol. CI uses a stub (fixed phrases). Still use energy VAD for “caller stopped talking.”
 - **Delivered:** `services/ivr/streaming_stt.py`; [ADR-014](../adr/ADR-014.md). `ScriptedStreamingSpeechToText`; `feed_until_speech_end` ties VAD `speech_end` to TTFB start + `finish()`.
-- **Tests:** `tests/ivr/pytest/test_streaming_stt.py` — known transcript after `speech_end`; no network; backend swaps by constructor.
+- **Tests:** `tests/ivr/pytest/test_streaming_stt.py` - known transcript after `speech_end`; no network; backend swaps by constructor.
 - **Later swap:** paid streaming STT (e.g. Deepgram) or local Whisper-class on the same protocol.
 - **Done when:** pytest for streaming STT passes. Live Twilio still uses LID, not this STT.
 
-### Phase 5 — Simulated turn engine (placeholder tasks)
+### Phase 5 - Simulated turn engine (placeholder tasks)
 
 - **Goal:** After language is already known: `speech_end` → stub transcript → canned phrase → stream first audio. Measure TTFB. Placeholder “tasks” (e.g. fake balance) are extra audio prompts, not real card APIs.
 - **Delivered:** `services/ivr/placeholder_intents.py`, `services/ivr/turn_engine.py`; [ADR-015](../adr/ADR-015.md).
-- **Tests:** `tests/ivr/pytest/test_turn_engine.py` — English + French; unknown → error phrase; median canned TTFB ≤ 500 ms; no TTS on warmed hot path.
+- **Tests:** `tests/ivr/pytest/test_turn_engine.py` - English + French; unknown → error phrase; median canned TTFB ≤ 500 ms; no TTS on warmed hot path.
 - **Done when:** pytest for the turn engine passes. Still not on a live Twilio call.
 
-### Phase 6 — Fake Twilio media-stream wiring
+### Phase 6 - Fake Twilio media-stream wiring
 
 - **Goal:** Same turn engine on inbound/outbound queues like FEAT-02’s fake stream.
 - **Delivered:** Handoff in `app/api/ivr.py` after language selection; `services/ivr/turn_store.py`; [ADR-016](../adr/ADR-016.md).
 - **Tests:** `tests/ivr/pytest/test_media_stream_turns.py`; optional `manual_verify_media_stream.py --mode placeholder`.
 - **Done when:** pytest fake stream shows language select then a canned task reply. Live Twilio now also enters placeholder turns after selection (stub STT → “did not catch that” unless scripted).
 
-### Phase 7 — Live Twilio smoke (English + 1–2 languages)
+### Phase 7 - Live Twilio smoke (English + 1–2 languages)
 
 - **Goal:** Hear canned replies start quickly on a real phone. Official clock remains the harness; the call is a sanity check.
 - **Delivered:** [ADR-017](../adr/ADR-017.md); `IVR_STT_SCRIPT`; `placeholder_turn` logs with `ttfb_ms`; `manual_verify_smoke.py --phase 7`.
 - **Tests:** pytest stays offline. You verify the checklist below on a handset.
 
-### Phase 7b — TTS voice matches call language
+### Phase 7b - TTS voice matches call language
 
-- **Goal:** After language selection, spoken replies use a **voice for that language**. English-only SAPI must not read French (or other) catalog text. Architecture scales to any LLM language: add a Piper model, a Windows speech pack, or later a cloud TTS that takes `language` — do not hard-code en/fr in the engine.
+- **Goal:** After language selection, spoken replies use a **voice for that language**. English-only SAPI must not read French (or other) catalog text. Architecture scales to any LLM language: add a Piper model, a Windows speech pack, or later a cloud TTS that takes `language` - do not hard-code en/fr in the engine.
 - **Delivered:** [ADR-018](../adr/ADR-018.md); `RoutedTextToSpeech`; SAPI `SelectVoice` from installed cultures; Piper per-language map (`IVR_PIPER_VOICES` / `IVR_PIPER_VOICE_DIR`); phrase cache plays English audio if there is no matching voice.
 - **Tests:** `tests/ivr/pytest/test_tts_routing.py`; English-only TTS must not synth French copy (`test_phrase_cache.py`).
 - **Depends on:** Phase 7.
@@ -118,13 +103,13 @@ Each phase is a small slice with its own tests. Do not start the next phase unti
   2. **Piper:** download a voice `.onnx` whose name starts with the locale (`fr_FR-…`), set `IVR_PIPER_VOICE_DIR` or `IVR_PIPER_VOICES`, restart, delete old `.cache/ivr-phrases` files for that language if they were built with the wrong voice.
   3. **Later:** one cloud TTS backend for many locales (same `synthesize(text, language)` interface).
 
-### Phase 8 — Live speech understanding (local grammar STT)
+### Phase 8 - Live speech understanding (local grammar STT)
 
 - **Goal:** After language selection, saying **balance**, **PIN**, **block**, or **goodbye** (or French **solde** / **bloquer** / **au revoir**) plays the matching canned line. No `IVR_STT_SCRIPT` required.
 - **Delivered:** [ADR-019](../adr/ADR-019.md); `GrammarStreamingSpeechToText` in `services/ivr/sapi_stt.py`; `IVR_STT_BACKEND=sapi`. Default remains the scripted stub for pytest.
 - **Tests:** `tests/ivr/pytest/test_sapi_stt.py` (fake recognizer; no PowerShell, no network).
 - **Depends on:** Phases 5–7b.
-- **Done when:** pytest green; live call with `IVR_STT_BACKEND=sapi` — you say “balance”, pause, hear the fake-balance line. Log `grammar_stt … text='balance'`.
+- **Done when:** pytest green; live call with `IVR_STT_BACKEND=sapi` - you say “balance”, pause, hear the fake-balance line. Log `grammar_stt … text='balance'`.
 - **Note:** Recognition time sits on the TTFB clock, so live `ttfb_ms` will often be **over 500 ms**. That is expected until a streaming vendor (Deepgram, etc.) is swapped in. Warmed playback after the transcript is still instant.
 
 
@@ -142,7 +127,7 @@ Not in this branch’s demo path, but keep in mind:
 | LLM | Slot reserved, 5s TTFB | Constrained templates first; LLM only where needed |
 | Voices | En + 1–2 for tests | Pre-render phrase cache for each supported language |
 | SLO | Median TTFB in-process | Also measure live; keep burst vs realtime playback lessons from ADR-005 |
-| Language | LID once per call | Same — do not run LID every sentence |
+| Language | LID once per call | Same - do not run LID every sentence |
 
 ---
 
@@ -216,9 +201,9 @@ After Phase 7b, Windows SAPI only speaks languages that have an installed speech
 
 ### Pass checklist (all must be true)
 
-1. Trial “press any key” gate (if trial) — expected
+1. Trial “press any key” gate (if trial) - expected
 2. Hear language-selection prompt; select by **DTMF** or speech
-3. Log: `language_selected` — then you **hear** the task menu
+3. Log: `language_selected` - then you **hear** the task menu
 4. Speak, then pause. Hear a canned reply:
    - with `IVR_STT_SCRIPT=balance` → fake-balance line
    - with empty script → “did not catch that”
@@ -233,7 +218,7 @@ After Phase 7b, Windows SAPI only speaks languages that have an installed speech
 ## Phase 7b live listen-check
 
 1. Restart the app after `.env` TTS changes. Delete `.cache/ivr-phrases` if you previously heard mangled French (old files were English-voiced French).
-2. Startup log `TTS spoken languages=` — if `fr` is missing, you will not hear French yet.
+2. Startup log `TTS spoken languages=` - if `fr` is missing, you will not hear French yet.
 3. Select French on the call:
    - **No French voice:** menu and replies are clear English.
    - **French SAPI pack or Piper `fr_*.onnx`:** menu and replies are French, spoken as French.
@@ -254,7 +239,7 @@ Restart the server. Startup log should show `IVR STT backend=GrammarStreamingSpe
 1. Call, pick a language, wait for the task menu.
 2. Say **balance** (or **solde** if the call language is French), then pause.
 3. Hear the fake-balance line. Log: `grammar_stt … text='balance'` then `placeholder_turn phrase=placeholder_balance`.
-4. `ttfb_ms` may be **above 500** — that includes Windows recognition time. Expected this phase.
+4. `ttfb_ms` may be **above 500** - that includes Windows recognition time. Expected this phase.
 5. Try **goodbye** to hear the goodbye line.
 
 Windows speech recognition must be available (it usually is for English). French commands need a French recognizer pack, same idea as TTS voices.

@@ -1,6 +1,6 @@
 """Time-To-First-Audio-Byte (TTFB) timer for IVR reply turns.
 
-Clock start: caller speech has ended (energy VAD `speech_end` — volume of the
+Clock start: caller speech has ended (energy VAD `speech_end` - volume of the
 talker's voice has dropped for the configured hangover).
 
 Clock stop: the system hands the first reply μ-law bytes to the outbound
@@ -17,7 +17,7 @@ from time import perf_counter
 
 # Canned menus / errors / placeholder task prompts (this feature).
 CANNED_TTFB_BUDGET_MS = 500.0
-# Future LLM-generated sentences only — not used on the hot path yet.
+# Future LLM-generated sentences only - not used on the hot path yet.
 LLM_TTFB_BUDGET_MS = 5000.0
 
 
@@ -83,7 +83,7 @@ class TtfbHarness:
         return [s for s in self.samples if s.reply_kind is ReplyKind.CANNED]
 
     def typical_canned_ttfb_ms(self) -> float | None:
-        """Median canned TTFB — SLO uses 'usually' not every single run."""
+        """Median canned TTFB - SLO uses 'usually' not every single run."""
         canned = [s.ttfb_ms for s in self.canned_samples()]
         if not canned:
             return None

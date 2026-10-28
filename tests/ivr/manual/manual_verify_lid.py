@@ -3,7 +3,7 @@ Manual offline wiring check for IVR language ID (Phases 5 / 10).
 
 Proves Fixed LID or SpeechBrain load + a usable result on English/fixture audio.
 Multilingual acceptance is a live phone call: speak French (or another language)
-yourself — see docs/ivr/features/FEAT-02.md (Phase 10 live SpeechBrain).
+yourself - see docs/ivr/features/FEAT-02.md (Phase 10 live SpeechBrain).
 
 Usage (from repo root):
   .\\venv\\Scripts\\python.exe tests\\ivr\\manual\\manual_verify_lid.py
@@ -124,7 +124,7 @@ async def _run(args: argparse.Namespace) -> int:
         print("Offline SpeechBrain wiring OK.")
         print(
             "Multilingual proof: dial the IVR and speak French (or another language) "
-            "on the call — docs/ivr/features/FEAT-02.md (Phase 10 live SpeechBrain)"
+            "on the call - docs/ivr/features/FEAT-02.md (Phase 10 live SpeechBrain)"
         )
     else:
         print(

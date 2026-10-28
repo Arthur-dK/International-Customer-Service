@@ -1,6 +1,6 @@
 # Deploy on a VPS (Hetzner)
 
-**Status: later — do not provision a server yet.** The Docker/Caddy layout is in the repo so public Twilio calling can be stood up when needed. Until then, run the app locally. A billed VPS is not required for software-engineering work.
+**Status: later - do not provision a server yet.** The Docker/Caddy layout is in the repo so public Twilio calling can be stood up when needed. Until then, run the app locally. A billed VPS is not required for software-engineering work.
 
 ---
 
@@ -135,7 +135,7 @@ Caddy obtains a TLS certificate automatically. If HTTPS fails, DNS is wrong or p
 ## 6. Point Twilio at the VPS
 
 1. Twilio Console → your Voice number → **A call comes in**.
-2. Webhook: `https://ivr.example.com/voice/incoming` — HTTP **POST**.
+2. Webhook: `https://ivr.example.com/voice/incoming` - HTTP **POST**.
 3. Save. The media stream URL is derived from that host (`wss://…/media-stream`).
 
 Call the number. Trial accounts may ask you to press a key first.
@@ -168,7 +168,7 @@ Hugging Face and TTS caches live in the `model-cache` volume (they survive rebui
 | Growth | What to do |
 |--------|------------|
 | OOM / LID crashes | Hetzner → server → **Resize** to CX33 (8 GB) or larger; `docker compose up -d` again |
-| Intent models, extra voices, email stack | Same VM, more RAM; keep compose — add services later |
+| Intent models, extra voices, email stack | Same VM, more RAM; keep compose - add services later |
 | Need a GPU later | New GPU CX or a second box; keep Caddy on this host as the public edge |
 
 You do not need to migrate off Hetzner for SMS/email; those are more HTTP webhooks on the same process (or extra compose services).

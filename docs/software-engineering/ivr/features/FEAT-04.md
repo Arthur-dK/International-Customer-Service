@@ -1,4 +1,4 @@
-# FEAT-04 — Placeholder intent router
+# FEAT-04 - Placeholder intent router
 
 | | |
 |---|---|
@@ -6,27 +6,11 @@
 | **Name** | Keyword placeholder intents, caller-ID gate, in-memory audio |
 | **Branch** | `feat/stub-intent-router` |
 | **Status** | Phases 1–6 implemented. |
-| **Target** | Route keyword requests to five canned card actions after an allowlisted caller picks a language |
+| **Target** | Allowlist gate, whole-word intents, confirm, and the task keypad |
+
+What a caller should hear is [the phone requirements](../../../requirements/ivr_requirements.md). This note is the build log.
 
 Language selection remains [FEAT-02](FEAT-02.md). Templated turns and TTFB remain [FEAT-03](FEAT-03.md). Decisions for this feature start at [ADR-020](../adr/ADR-020.md).
-
----
-
-## User experience
-
-This feature decides who may continue, and which card action a sentence maps to. A number that is not on the list hears “This number is not recognised.” and the call ends before the language prompt. An allowed caller who has chosen a language gets five actions: balance, PIN, statement, block, and unblock. One action word selects that action. Two action words in one sentence do not. Balance, PIN, and statement each play one placeholder line, and the PIN line speaks no PIN. Block and unblock ask for yes or no first. About six seconds of silence opens a keypad for the same five actions.
-
-### Try this
-
-Each line should work on a call. Anything not listed is not part of this feature.
-
-- From a number that is not allowed, you hear “This number is not recognised.” The call ends. You do not hear the language prompt.
-- From an allowed number, after you select English, you hear: “You can check your balance, check your PIN, hear your statement, block your card, or unblock your card.”
-- “Can I check the balance please?” plays the placeholder balance line, including “one hundred dollars.”
-- “Block my card”, then “yes”, plays the placeholder line that the card has been blocked. “Block my card”, then “no”, returns to the task menu.
-- About six seconds of silence on the task menu plays the keypad. Press 1 for balance, 2 for PIN, 3 for statement, 4 for block, 5 for unblock.
-- Press 2. The PIN line plays. It does not speak a PIN or any digits.
-- Press 4 or 5. You are asked to confirm. Press 1 for yes, or 2 for no.
 
 ---
 
@@ -34,42 +18,42 @@ Each line should work on a call. Anything not listed is not part of this feature
 
 Each phase has its own tests. Do not start the next phase until the current one is green.
 
-### Phase 1 — Allowlist gate
+### Phase 1 - Allowlist gate
 
 - **Goal:** Unknown numbers are rejected on the Voice webhook, before language selection.
 - **Delivered:** `core/telephony/allowed_callers.json`, `core/telephony/allowlist.py`, `core/telephony/rejection.py`; `<Say>`, a one-second pause, then `<Hangup>` in [`app/api/ivr.py`](../../../app/api/ivr.py); Twilio call completion in `services/ivr/force_hangup.py`; [ADR-020](../adr/ADR-020.md).
 - **Tests:** `tests/ivr/pytest/test_allowlist.py`, `tests/ivr/pytest/test_webhook.py`.
 - **Done when:** an allowlisted number still gets `<Connect><Stream>`; missing, anonymous, and unknown numbers get `<Say>` and `<Hangup>` and no stream URL.
 
-### Phase 2 — Keyword router
+### Phase 2 - Keyword router
 
 - **Goal:** A transcript in the selected language maps to one of the five actions, or to no match.
 - **Delivered:** `services/ivr/intent_router.py`; [ADR-021](../adr/ADR-021.md). After language selection, the turn engine uses `route_intent`. The older mapper is only for goodbye. A sentence with two actions asks the caller to repeat.
 - **Tests:** `tests/ivr/pytest/test_intent_router.py`.
 - **Done when:** varied sentences in English, French, Hebrew, Arabic, and Swahili route when they contain that language's keyword as a whole word; unblock does not match block; two actions do not match.
 
-### Phase 3 — Phrase catalog
+### Phase 3 - Phrase catalog
 
 - **Goal:** Each action plays one canned line, in the selected language, and the PIN line does not speak a PIN.
 - **Delivered:** `core/language/phrases.json` lines for balance, PIN, statement, block, and unblock in English, French, Hebrew, Arabic, and Swahili; [ADR-023](../adr/ADR-023.md). The English PIN line is "Your PIN will not be spoken on this call. This is a placeholder."
 - **Tests:** `tests/ivr/pytest/test_phrase_catalog.py`.
 - **Done when:** every action has a distinct line in each of the five languages; the PIN line has no digits and no run of spelled-out numbers.
 
-### Phase 4 — Confirm and keypad
+### Phase 4 - Confirm and keypad
 
 - **Goal:** Block and unblock ask for yes or no. Six seconds of silence opens a keypad, and speech can interrupt it.
 - **Delivered:** `services/ivr/confirm.py`; confirm and keypad lines in `core/language/phrases.json`; the turn engine listens for speech, a key, or silence; [ADR-024](../adr/ADR-024.md).
 - **Tests:** `tests/ivr/pytest/test_confirm.py`, `tests/ivr/pytest/test_turn_engine.py`.
 - **Done when:** yes plays the result line; no, or a second unclear answer, plays the task menu; silence opens the keypad and does not spend the spoken retry. Keys are 1 balance, 2 PIN, 3 statement, 4 block, 5 unblock, and on confirm 1 yes, 2 no.
 
-### Phase 5 — Media stream
+### Phase 5 - Media stream
 
 - **Goal:** The task dialogue runs after language selection on the existing media stream. No new speech engine.
 - **Delivered:** `PlaceholderTurnEngine.run_on_queues` in [`app/api/ivr.py`](../../../app/api/ivr.py) on the same inbound, outbound, and keypad queues; [ADR-025](../adr/ADR-025.md).
 - **Tests:** `tests/ivr/pytest/test_media_stream_turns.py`.
 - **Done when:** a fake Twilio stream selects a language, then plays a canned reply, a block confirm followed by yes, and the task keypad after silence. The scripted recognizer is the only one used in that test.
 
-### Phase 6 — Privacy assertions
+### Phase 6 - Privacy assertions
 
 - **Goal:** Caller audio stays in memory. A turn does not leave a `.wav` or `.mp3`, and logs do not contain a PIN as digits.
 - **Delivered:** [ADR-026](../adr/ADR-026.md). Temporary speech files were already deleted when synthesis or recognition finished. The new tests lock that in.

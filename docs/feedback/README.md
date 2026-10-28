@@ -8,7 +8,7 @@ Names and other identifying details stay out of this tree.
 
 | Folder | Who | Latest session | Still open |
 |--------|-----|----------------|------------|
-| [bank-charity-intermediary](bank-charity-intermediary/profile.md) | Owner of a very small firm between digital banks and charities | [02-10-2026](bank-charity-intermediary/02-10-2026.md) | Languages the builder does not speak (in progress); calling a local run from his phone |
+| [bank-charity-intermediary](bank-charity-intermediary/profile.md) | Owner of a very small firm between digital banks and charities | [24-10-2026](bank-charity-intermediary/24-10-2026.md) | Languages the builder does not speak (in progress); calling a local run from his phone |
 
 ## Add a source
 
@@ -29,11 +29,11 @@ Names and other identifying details stay out of this tree.
 
 ## Points
 
-### F1 — short title
+### F1 - short title
 
 What they asked for, in their terms.
 
-**Disposition:** Accepted, declined, or open — and why, in one or two sentences.
+**Disposition:** Accepted, declined, or open - and why, in one or two sentences.
 
 **Resolution:** Link to the commit, feature note, ADR, or `later.md` entry when one exists. Leave this off while the point is still open.
 ```

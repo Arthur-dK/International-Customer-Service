@@ -2,7 +2,7 @@
 
 What each application, data, and test file in this repository does. The implemented path is multi-lingual IVR over Twilio Voice plus a media-stream WebSocket. SMS accepts a signed webhook, answers an allowlisted text with an English placeholder, and rejects any other non-empty text. Email accepts a password-protected Inbound Parse post and echoes the plain text through SendGrid. The setup steps are in `docs/software-engineering/email/features/FEAT-01.md`.
 
-IVR design notes live under `docs/ivr/`. SMS design notes live under `docs/sms/`. Work held for later stays in `docs/software-engineering/later.md`. Hosting: `docs/deploy-vps.md`. This page is a file map, not an architecture decision record.
+What a tester should see is under `docs/requirements/`. Build logs and ADRs are under `docs/software-engineering/`. Work held for later stays in `docs/software-engineering/later.md`. Hosting: `docs/deploy-vps.md`. This page is a file map, not an architecture decision record.
 
 ---
 
@@ -13,10 +13,10 @@ IVR design notes live under `docs/ivr/`. SMS design notes live under `docs/sms/`
 | `app/main.py` | Creates the FastAPI app, attaches health/IVR/SMS/email routers, and on startup warms TTS, phrase audio, and language ID without blocking `/health`. |
 | `app/deps.py` | Shared constructors for TTS, streaming STT/TTS, phrase cache, VAD config, and SpeechBrain (or fallback) language ID. |
 | `app/api/__init__.py` | Empty package marker for API routers. |
-| `app/api/health.py` | `GET /health` — liveness JSON used by Docker Compose and local checks. |
+| `app/api/health.py` | `GET /health` - liveness JSON used by Docker Compose and local checks. |
 | `app/api/ivr.py` | Twilio `POST /voice/incoming` (TwiML that opens a media stream) and `WebSocket /media-stream` (inbound μ-law, DTMF, language selection, then placeholder task turns). |
-| `app/api/sms.py` | `POST /sms/incoming` — Twilio SMS webhook. A bad signature returns 403. A valid one returns empty TwiML, sends an English placeholder to an allowlisted body, or sends the not-recognised line to any other non-empty text. |
-| `app/api/email.py` | `POST /email/incoming` — SendGrid Inbound Parse. A bad password returns 403. A valid plain-text body is echoed once. An empty body or a full daily cap sends nothing. |
+| `app/api/sms.py` | `POST /sms/incoming` - Twilio SMS webhook. A bad signature returns 403. A valid one returns empty TwiML, sends an English placeholder to an allowlisted body, or sends the not-recognised line to any other non-empty text. |
+| `app/api/email.py` | `POST /email/incoming` - SendGrid Inbound Parse. A bad password returns 403. A valid plain-text body is echoed once. An empty body or a full daily cap sends nothing. |
 
 ---
 

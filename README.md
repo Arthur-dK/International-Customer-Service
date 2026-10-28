@@ -10,9 +10,9 @@ The repository is organised as **two sequential workstreams**, not as three inde
 
 | | |
 |---|---|
-| **You are here** | **Software engineering** — build every channel end to end with a **placeholder** intent-recognition algorithm |
-| **Not started** | **Data science** — research, test, and choose the real intent-recognition implementation for IVR, SMS, and email |
-| **Public deploy** | **Deferred** — Hetzner/VPS is prepared in-repo but **not running**. No live host until there is a real need (current list price is not justified for local-only work). |
+| **You are here** | **Software engineering** - build every channel end to end with a **placeholder** intent-recognition algorithm |
+| **Not started** | **Data science** - research, test, and choose the real intent-recognition implementation for IVR, SMS, and email |
+| **Public deploy** | **Deferred** - Hetzner/VPS is prepared in-repo but **not running**. No live host until there is a real need (current list price is not justified for local-only work). |
 | **Rule** | Data science does **not** begin until the software engineering segment is complete |
 
 ```text
@@ -26,7 +26,7 @@ Until the data science segment lands, “the caller/texter/sender wanted X” is
 
 ## The two segments
 
-### 1. Software engineering — everything except intent-model research
+### 1. Software engineering - everything except intent-model research
 
 Product and platform work that must exist regardless of which intent model is chosen later:
 
@@ -36,9 +36,9 @@ Product and platform work that must exist regardless of which intent model is ch
 - Card/account lookup, security and privacy constraints, deploy and tests
 - Channel behaviour for IVR, SMS, and email **with a swappable intent interface**
 
-IVR notes live under [`docs/ivr/`](docs/ivr/): feature notes ([FEAT-01](docs/ivr/features/FEAT-01.md), [FEAT-02](docs/ivr/features/FEAT-02.md), [FEAT-03](docs/ivr/features/FEAT-03.md), [FEAT-04](docs/ivr/features/FEAT-04.md)) and [ADRs](docs/ivr/adr/). SMS notes live under [`docs/sms/`](docs/sms/): [FEAT-01](docs/sms/features/FEAT-01.md), [FEAT-02](docs/sms/features/FEAT-02.md), and [ADRs](docs/sms/adr/). Work held for later is in [`docs/software-engineering/later.md`](docs/software-engineering/later.md). File-by-file map: [`docs/code-files.md`](docs/code-files.md). Deploy: [`docs/deploy-vps.md`](docs/deploy-vps.md). Review sessions with target users: [`docs/feedback/`](docs/feedback/).
+Tester-facing behavior is in [`docs/requirements/`](docs/requirements/): [phone](docs/requirements/ivr_requirements.md), [SMS](docs/requirements/sms_requirements.md), and [email](docs/requirements/email_requirements.md). Build logs and ADRs live under [`docs/software-engineering/`](docs/software-engineering/): [IVR](docs/software-engineering/ivr/features/FEAT-01.md), [SMS](docs/software-engineering/sms/features/FEAT-01.md), [email](docs/software-engineering/email/features/FEAT-01.md). Work held for later is in [`docs/software-engineering/later.md`](docs/software-engineering/later.md). File-by-file map: [`docs/code-files.md`](docs/code-files.md). Deploy: [`docs/deploy-vps.md`](docs/deploy-vps.md). Review sessions with target users: [`docs/feedback/`](docs/feedback/).
 
-### 2. Data science — intent recognition only (all three channels)
+### 2. Data science - intent recognition only (all three channels)
 
 A separate, high-complexity process: **research, experiment, evaluate, and choose** how the system maps language to a **fixed intent set**. That process is repeated (or jointly designed) for:
 
@@ -48,17 +48,17 @@ A separate, high-complexity process: **research, experiment, evaluate, and choos
 | **SMS** | Short texts whose meaning is **balance** or **PIN** (this phase), in many languages |
 | **Email** | Ticket types for classification, then which types are safe to automate |
 
-This is not “wire an LLM into the call.” It is model/data work: corpora, languages, latency vs accuracy, on-device vs API, and a documented choice that plugs into the software engineering interfaces. **No data-science folder or runbook yet** — that work starts after software engineering is done.
+This is not “wire an LLM into the call.” It is model/data work: corpora, languages, latency vs accuracy, on-device vs API, and a documented choice that plugs into the software engineering interfaces. **No data-science folder or runbook yet** - that work starts after software engineering is done.
 
 ---
 
 ## Product goals
 
-- **Multi-lingual support** — on the order of ~50 languages, not a small closed list.
-- **24×7 self-service** — automate high-volume, well-scoped requests outside human office hours.
-- **Lower support cost** — deflect routine card queries and speed email handling for agents.
-- **Fixed action sets** — known intents / ticket types, not open-ended agentic chat.
-- **Human in the loop** — ambiguity, language mismatch for live handoff, and non-automated email stay with people.
+- **Multi-lingual support** - on the order of ~50 languages, not a small closed list.
+- **24×7 self-service** - automate high-volume, well-scoped requests outside human office hours.
+- **Lower support cost** - deflect routine card queries and speed email handling for agents.
+- **Fixed action sets** - known intents / ticket types, not open-ended agentic chat.
+- **Human in the loop** - ambiguity, language mismatch for live handoff, and non-automated email stay with people.
 
 ### Channels today vs this project
 
@@ -72,12 +72,12 @@ Human phone support remains for cases that need an agent. AI channels must hand 
 
 ---
 
-## Software engineering — channel scope
+## Software engineering - channel scope
 
 Work **inside this segment** is still sequenced by impact (IVR first: many Red Cross–supported users prefer calling and may be illiterate), but that order is *delivery inside software engineering*, not a substitute for the data science segment.
 
 1. **Multi-lingual IVR** (in progress on the current stack)
-2. **Multi-lingual SMS** (PIN + Balance) — router stubbed
+2. **Multi-lingual SMS** (PIN + Balance) - router stubbed
 3. **Email translator** (inbound → English for agents; reply → card holder’s language)
 4. **Email ticket pipeline** (structured types + confidence, human default)
 5. **Automated email responses** for agreed-safe types only
@@ -111,14 +111,14 @@ Shared principles for this segment: prefer **local open-source** tooling where i
 
 ---
 
-## Data science — what comes later
+## Data science - what comes later
 
 When software engineering is complete, this segment owns:
 
 - Defining evaluation sets and languages per channel (noisy telephony vs short SMS vs long email).
 - Comparing approaches (keywords, embeddings, constrained LLMs, classical classifiers, hybrids).
 - Choosing **one implementation per channel** (or a justified shared model) with latency, cost, privacy, and accuracy recorded.
-- Handing a production-ready intent module to the existing software interfaces — not a second product rewrite.
+- Handing a production-ready intent module to the existing software interfaces - not a second product rewrite.
 
 Until then, IVR placeholder mapping lives in `services/ivr/placeholder_intents.py` (keyword → canned phrase). That file is a stand-in, not the research outcome.
 
@@ -132,12 +132,11 @@ services/ivr/                     # Voice pipeline (audio, LID, TTS/STT, placeho
 services/cards/                   # Shared card operations (planned)
 core/                             # Config, language tables, reserved AI/telephony packages
 tests/                            # Channel-aligned tests (ivr/ implemented; sms/, email/ reserved)
-docs/ivr/                         # IVR feature notes and ADRs
-docs/sms/                         # SMS feature notes and ADRs
-docs/software-engineering/        # Work held for later
+docs/requirements/                # Tester-facing behavior for phone, SMS, and email
+docs/software-engineering/        # Build logs, ADRs, and work held for later
 docs/feedback/                    # Review sessions, one folder per source
 docs/code-files.md                # What each code file does
-docs/deploy-vps.md                # Hetzner/VPS runbook (deferred — not live)
+docs/deploy-vps.md                # Hetzner/VPS runbook (deferred - not live)
 deploy/Caddyfile                  # TLS reverse proxy for Twilio HTTPS/WSS
 ```
 
@@ -152,10 +151,10 @@ deploy/Caddyfile                  # TLS reverse proxy for Twilio HTTPS/WSS
 | Backend | Python 3.12+, FastAPI, WebSockets, Pytest |
 | Voice | Twilio Programmable Voice, 8 kHz μ-law Media Streams |
 | Speech (now) | Energy VAD; SpeechBrain LID (or fixed stub); SAPI/Edge/Piper TTS; grammar or scripted STT |
-| Intent (now) | **Placeholder** — not the data science deliverable |
+| Intent (now) | **Placeholder** - not the data science deliverable |
 | Intent (later) | Outcome of the data science segment |
 | Messaging / mail | Twilio SMS and email adapters (planned) |
-| Infra | Local for now. Later: Docker Compose on a VPS (Hetzner) + Caddy — [deploy-vps.md](docs/deploy-vps.md) (**deferred**) |
+| Infra | Local for now. Later: Docker Compose on a VPS (Hetzner) + Caddy - [deploy-vps.md](docs/deploy-vps.md) (**deferred**) |
 
 ## Running tests
 

@@ -1,4 +1,4 @@
-# FEAT-01 — Email echo on a SendGrid hostname
+# FEAT-01 - Email echo on a SendGrid hostname
 
 | | |
 |---|---|
@@ -6,24 +6,11 @@
 | **Name** | SendGrid inbound mail, then an exact plain-text echo |
 | **Branch** | `feat/email-echo` |
 | **Status** | Phases 1–6 implemented. |
-| **Target** | A plain-text email to `echo@inbox.<your-domain>` is answered with that same plain text |
+| **Target** | SendGrid inbound mail, password check, plain-text echo, language log, and Message-ID dedupe. [FEAT-02](FEAT-02.md) replaces the echo. |
+
+What a tester should see now is [the email requirements](../../../requirements/email_requirements.md). This note is the build log.
 
 Voice stays on [FEAT-04](../../ivr/features/FEAT-04.md). SMS stays on [FEAT-02](../../sms/features/FEAT-02.md). The account and hostname decision is [ADR-001](../adr/ADR-001.md). The webhook password check is [ADR-002](../adr/ADR-002.md). The plain-text echo is [ADR-003](../adr/ADR-003.md). Language detection is [ADR-004](../adr/ADR-004.md). Retry dedupe is [ADR-005](../adr/ADR-005.md).
-
----
-
-## User experience
-
-When this feature is finished, any sender can email `echo@inbox.<your-domain>` and receive the same plain-text body from that address. The subject of the reply is `Re:` plus the original subject. HTML and attachments are ignored. An empty plain-text part gets no reply. Language detection runs on every non-empty body and is written to the log. It does not change the reply.
-
-A plain-text email to the inbound address is answered with that same text. The reply comes from the address that received the mail.
-
-### Try this (Phase 6)
-
-- Pytest, from the repo root: `.\venv\Scripts\python.exe -m pytest tests/email/pytest -q`
-- Offline reply check (no email is sent): `.\venv\Scripts\python.exe tests\email\manual\manual_verify_email_reply.py`
-- It prints PASS when one French plain-text post would be echoed once, the log has `fr` and a score, and a second post of that Message-ID would not send again.
-- Live: follow [Live check](#live-check).
 
 ---
 
@@ -31,42 +18,42 @@ A plain-text email to the inbound address is answered with that same text. The r
 
 Each later phase has its own tests. Do not start the next phase until the current one is green.
 
-### Phase 1 — SendGrid and a domain
+### Phase 1 - SendGrid and a domain
 
 - **Goal:** A free trial account, one domain, an `inbox` hostname that points at SendGrid, and a Mail Send API key in `.env`. No application behavior.
 - **Delivered:** this page and [ADR-001](../adr/ADR-001.md).
 - **Tests:** none. The check is the console list.
 - **Done when:** the clicks, the env names, and the mailbox hostname are written here, and the console list can be followed without buying anything except the domain.
 
-### Phase 2 — Authenticated inbound webhook
+### Phase 2 - Authenticated inbound webhook
 
 - **Goal:** `POST /email/incoming` checks HTTP basic auth, returns 200, and sends no mail. A bad password returns 403.
 - **Delivered:** `services/email/auth.py`, `services/email/inbound.py`, `POST /email/incoming` in [`app/api/email.py`](../../../app/api/email.py); [ADR-002](../adr/ADR-002.md). Logs may include the envelope sender, the envelope recipient, and whether plain text was present. They must not include the subject or the plain-text body.
 - **Tests:** `tests/email/pytest/test_incoming.py`. Manual: `tests/email/manual/manual_verify_email_webhook.py`.
 - **Done when:** the matching password returns 200 and an empty body; a missing or wrong password returns 403; the plain-text body is absent from the log and from the response.
 
-### Phase 3 — Exact plain-text echo
+### Phase 3 - Exact plain-text echo
 
 - **Goal:** The parsed `text` field is sent back through the SendGrid Mail Send API. From is the address that received the mail. To is the sender. An empty `text` sends nothing. A daily cap stays under the trial quota.
 - **Delivered:** `services/email/outbound.py`, `services/email/quota.py`, the send in [`app/api/email.py`](../../../app/api/email.py); [ADR-003](../adr/ADR-003.md). `EMAIL_DAILY_SEND_CAP` defaults to 20.
 - **Tests:** `tests/email/pytest/test_echo_email.py`. Manual: `tests/email/manual/manual_verify_email_echo.py`.
 - **Done when:** the mocked client is called once with that exact body, `from` equal to the inbound recipient, and `to` equal to the sender. An empty `text` does not call it.
 
-### Phase 4 — Language detection on every email
+### Phase 4 - Language detection on every email
 
 - **Goal:** The same offline detector used for SMS runs on every non-empty plain-text body. The reply body stays that text. The log records the language code and the score.
 - **Delivered:** `services/language.py`; SMS imports that function; the detect call in [`app/api/email.py`](../../../app/api/email.py); [ADR-004](../adr/ADR-004.md).
 - **Tests:** `tests/email/pytest/test_echo_email.py` covers a French sentence. `tests/sms/pytest/test_language.py` still covers the shared function.
 - **Done when:** the reply JSON log includes the language code and the score, and not the body. An obvious French sentence is not labeled English.
 
-### Phase 5 — Retry dedupe
+### Phase 5 - Retry dedupe
 
 - **Goal:** A second POST with the same `Message-ID` does not send again. A failed send returns 500 and can be retried.
 - **Delivered:** `services/email/dedupe.py`; the key check in [`app/api/email.py`](../../../app/api/email.py); [ADR-005](../adr/ADR-005.md). A missing Message-ID is hashed from the sender, the recipient, and the plain text.
 - **Tests:** `tests/email/pytest/test_dedupe.py`.
 - **Done when:** two posts of one Message-ID call Mail Send once. A failed send returns 500, and a later post of that message can send.
 
-### Phase 6 — Manual check
+### Phase 6 - Manual check
 
 - **Goal:** An offline script covers the echo without calling SendGrid. The live check is one real email whose reply body matches, with a language code in the log.
 - **Delivered:** `tests/email/manual/manual_verify_email_reply.py` and the [Live check](#live-check) below.
@@ -75,6 +62,8 @@ Each later phase has its own tests. Do not start the next phase until the curren
 ---
 
 ## Live check
+
+This check belongs to the echo built in this feature. [FEAT-02](FEAT-02.md) replaces that echo. The reply a person should get now is in the email requirements.
 
 The app and the HTTPS tunnel must already be running. Inbound Parse for `internationalivr.xyz` must post to `https://<user>:<password>@<public-host>/email/incoming`, with “POST the raw, full MIME message” left off. `.env` must contain `SENDGRID_API_KEY`, `SENDGRID_INBOUND_USER`, and `SENDGRID_INBOUND_PASSWORD`. Restart the app after any change to `.env`.
 

@@ -31,7 +31,7 @@ class Settings(BaseSettings):
     # None = on when not Windows (Linux/VPS). True/false to force. Needs outbound HTTPS.
     IVR_USE_EDGE_TTS: bool | None = None
 
-    # IVR language ID — prefer SpeechBrain when installed; fixed LID remains fallback
+    # IVR language ID - prefer SpeechBrain when installed; fixed LID remains fallback
     IVR_LID_FORCE_LANGUAGE: str | None = None
     IVR_USE_SPEECHBRAIN_LID: bool = True
     IVR_SPEECHBRAIN_MODEL: str = "speechbrain/lang-id-voxlingua107-ecapa"

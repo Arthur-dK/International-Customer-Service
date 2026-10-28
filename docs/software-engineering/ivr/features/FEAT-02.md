@@ -1,4 +1,4 @@
-# FEAT-02 — IVR spoken language selection (Twilio Media Streams)
+# FEAT-02 - IVR spoken language selection (Twilio Media Streams)
 
 | | |
 |---|---|
@@ -6,39 +6,14 @@
 | **Name** | IVR language selection |
 | **Branch** | `feat/ivr-language-detector` |
 | **Status** | Implemented (Phases 1–10 + post-live hardening) |
-| **Target** | Real-time audio streaming + multi-lingual language routing at call start |
+| **Target** | Stream-native language selection at the start of the call |
 
-This is the single process/runbook document for the feature. It replaces the former root docs:
+What a caller should hear is [the phone requirements](../../../requirements/ivr_requirements.md). This note is the build log. It replaces the former root docs:
 
 - `docs/ivr-language-selection-smoke.md` (Phase 9)
 - `docs/ivr-language-id-speechbrain.md` (Phase 10)
 
-Architectural decisions live under [`docs/adr/`](../adr/).
-
----
-
-## Objective
-
-When a caller dials the Twilio Voice number, the system must select a language before the rest of the IVR continues — primarily by spoken language identification (LID), with DTMF keypad fallback and speech barge-in during the DTMF menu.
-
-Selection runs entirely on the bidirectional Media Stream WebSocket (not Twilio `<Gather>`). The Voice webhook only returns TwiML that starts the stream.
-
----
-
-## User experience
-
-This feature chooses the language for the rest of the call. The first prompt asks for the name of the language. Wait until that prompt finishes before speaking. Silence leads to a keypad menu that names each language on the menu for the calling number, and the digit that selects it.
-
-### Try this
-
-Each line should work on a call from a number that is allowed through. Anything not listed is not part of this feature.
-
-- The first thing you are asked is the name of the language you want. The language that is spoken depends on the country being called from.
-- The languages currently supported include: "Afrikaans, Amharic, Arabic (several variants), Bengali, Bulgarian, Cantonese, Catalan, Czech, Danish, Dutch, English, Filipino, Finnish, French, German, Greek, Gujarati, Hebrew, Hindi, Hungarian, Icelandic, Indonesian, Italian, Japanese, Kannada, Korean, Latvian, Malay, Malayalam, Mandarin, Marathi, Norwegian, Polish, Portuguese, Punjabi, Romanian, Russian, Serbian, Slovak, Spanish, Swedish, Tamil, Telugu, Thai, Turkish, Ukrainian, Vietnamese, Welsh"
-- After that prompt finishes, say “English”. The task menu that follows is in English.
-- Stay silent instead. The keypad menu names a digit for English. Press that digit. The task menu that follows is in English.
-
-
+Architectural decisions live under [`../adr/`](../adr/). Selection runs on the Media Stream WebSocket, not Twilio `<Gather>`. The Voice webhook only returns TwiML that starts the stream.
 
 ---
 
@@ -89,19 +64,19 @@ Every decision for this feature maps to an ADR. ADR-001 is the hosting prerequis
 | Setting | Meaning |
 |---------|---------|
 | `IVR_USE_SPEECHBRAIN_LID` | Prefer SpeechBrain when true (default true if deps available) |
-| `IVR_LID_FORCE_LANGUAGE` | If set (e.g. `en`), force Fixed LID — Phase 9 smoke profile |
+| `IVR_LID_FORCE_LANGUAGE` | If set (e.g. `en`), force Fixed LID - Phase 9 smoke profile |
 | `IVR_SPEECHBRAIN_MODEL` | Default `speechbrain/lang-id-voxlingua107-ecapa` |
-| `IVR_MIN_LID_CONFIDENCE` | Default `0.15` — reject LID below this |
-| `IVR_SILENCE_TIMEOUT_S` | Default `6.0` — listen window before DTMF fallback; rejected “um”/noise does not end the window early |
-| `IVR_PLAYBACK_REALTIME` | Default `false` — burst into Twilio buffer (smooth). `true` ≈ 20ms pacing (often choppy live) |
-| `IVR_VAD_RMS_THRESHOLD` | Default `250.0` — energy VAD sensitivity |
+| `IVR_MIN_LID_CONFIDENCE` | Default `0.15` - reject LID below this |
+| `IVR_SILENCE_TIMEOUT_S` | Default `6.0` - listen window before DTMF fallback; rejected “um”/noise does not end the window early |
+| `IVR_PLAYBACK_REALTIME` | Default `false` - burst into Twilio buffer (smooth). `true` ≈ 20ms pacing (often choppy live) |
+| `IVR_VAD_RMS_THRESHOLD` | Default `250.0` - energy VAD sensitivity |
 | `IVR_PIPER_MODEL_PATH` / `IVR_PIPER_BIN` | If set, use Piper TTS; else Windows SAPI; else tone stub |
 
 ---
 
 ## Phased implementation process
 
-### Phase 1 — Caller locale / country language data
+### Phase 1 - Caller locale / country language data
 
 - **Goal:** Resolve languages and prompt language from the caller’s phone number.
 - **Delivered:** `core/language` country tables; `resolve_caller_locale` → `CallerLocale`; DTMF menu builders and digit→language mapping.
@@ -109,31 +84,31 @@ Every decision for this feature maps to an ADR. ADR-001 is the hosting prerequis
 - **ADRs:** [ADR-008](../adr/ADR-008.md)
 - **Notes:** Unknown numbers fall back to a default English-oriented prompt set.
 
-### Phase 2 — μ-law / PCM audio helpers
+### Phase 2 - μ-law / PCM audio helpers
 
 - **Goal:** One Twilio-compatible audio contract for VAD, TTS, LID, and tests.
-- **Delivered:** `services/ivr/audio.py` — mulaw↔pcm16, resample, chunking, tone generation; 8 kHz mono μ-law wire format.
+- **Delivered:** `services/ivr/audio.py` - mulaw↔pcm16, resample, chunking, tone generation; 8 kHz mono μ-law wire format.
 - **Tests:** `test_audio.py`, `manual_verify_audio.py`
 - **ADRs:** [ADR-003](../adr/ADR-003.md)
 - **Notes:** SpeechBrain boundary resamples 8 kHz PCM → 16 kHz later (Phase 10).
 
-### Phase 3 — Energy VAD
+### Phase 3 - Energy VAD
 
 - **Goal:** Segment spoken utterances (`speech_start` / `speech_end` + PCM buffer).
-- **Delivered:** `services/ivr/vad.py` — `EnergyVad` / `VadConfig`; configurable thresholds.
+- **Delivered:** `services/ivr/vad.py` - `EnergyVad` / `VadConfig`; configurable thresholds.
 - **Tests:** `test_vad.py`, `manual_verify_vad.py`
 - **ADRs:** [ADR-004](../adr/ADR-004.md)
 - **Notes:** Simple RMS VAD chosen over neural VAD for speed and offline testability.
 
-### Phase 4 — Text-to-speech
+### Phase 4 - Text-to-speech
 
 - **Goal:** Speak language-selection and DTMF-menu prompts on the call.
 - **Delivered:** Piper (optional), Windows SAPI, tone stub; `CachedTextToSpeech` under `.cache/ivr-tts/`; startup warmup.
 - **Tests:** `test_tts.py`, `manual_verify_tts.py`
 - **ADRs:** [ADR-005](../adr/ADR-005.md)
-- **Notes:** Cold Windows SAPI via PowerShell is ~2–3s; cache/warmup brings warm prompt start to a few hundred ms after stream connect. Production should use Piper or pre-rendered prompts — not SAPI+PowerShell.
+- **Notes:** Cold Windows SAPI via PowerShell is ~2–3s; cache/warmup brings warm prompt start to a few hundred ms after stream connect. Production should use Piper or pre-rendered prompts - not SAPI+PowerShell.
 
-### Phase 5 — Language ID (Fixed backend)
+### Phase 5 - Language ID (Fixed backend)
 
 - **Goal:** Prove the selection path with a deterministic LID before SpeechBrain.
 - **Delivered:** `FixedLanguageIdentifier`; `build_default_lid()` with force-language override.
@@ -141,15 +116,15 @@ Every decision for this feature maps to an ADR. ADR-001 is the hosting prerequis
 - **ADRs:** [ADR-006](../adr/ADR-006.md)
 - **Notes:** Fixed LID remains the hard fallback and Phase 9 smoke profile.
 
-### Phase 6 — Language selection state machine
+### Phase 6 - Language selection state machine
 
 - **Goal:** Stream-native selector: prompt → listen → (silence) → DTMF menu → done.
 - **Delivered:** `LanguageSelector`; speech via VAD+LID; DTMF fallback; barge-in; metrics; methods `speech` \| `dtmf` \| `speech_barge_in`.
 - **Tests:** `test_language_selection.py`, `manual_verify_language_selection.py`
 - **ADRs:** [ADR-002](../adr/ADR-002.md), [ADR-007](../adr/ADR-007.md)
-- **Notes:** No TwiML Gather — queues only (inbound audio, outbound media, DTMF).
+- **Notes:** No TwiML Gather - queues only (inbound audio, outbound media, DTMF).
 
-### Phase 7 — Fake Twilio media-stream harness
+### Phase 7 - Fake Twilio media-stream harness
 
 - **Goal:** End-to-end offline: fake start → prompt audio out → DTMF/speech in → selected.
 - **Delivered:** `fake_twilio_stream.py`, `manual_verify_media_stream.py`, pytest media-stream coverage.
@@ -157,7 +132,7 @@ Every decision for this feature maps to an ADR. ADR-001 is the hosting prerequis
 - **ADRs:** [ADR-010](../adr/ADR-010.md)
 - **Notes:** Cannot fully reproduce acoustic echo or live network jitter.
 
-### Phase 8 — TwiML + webhook + WebSocket wiring
+### Phase 8 - TwiML + webhook + WebSocket wiring
 
 - **Goal:** Real FastAPI endpoints: incoming Voice → Stream TwiML; WS media events.
 - **Delivered:** `twiml.py`; `app/api/ivr.py` (media/DTMF/start/stop; send media + clear); webhook/WS unit tests.
@@ -165,7 +140,7 @@ Every decision for this feature maps to an ADR. ADR-001 is the hosting prerequis
 - **ADRs:** [ADR-001](../adr/ADR-001.md), [ADR-002](../adr/ADR-002.md)
 - **Notes:** `CLEAR_AUDIO_SENTINEL` → Twilio Media Stream event `clear` (flush buffer).
 
-### Phase 9 — Live Twilio smoke (Fixed LID + DTMF)
+### Phase 9 - Live Twilio smoke (Fixed LID + DTMF)
 
 - **Goal:** First real handset call: hear prompt, select via speech(en)/DTMF, clean `STOP`.
 - **Delivered:** Dev smoke profile; `manual_verify_smoke.py --phase 9`; burst playback default; TTS cache/warmup.
@@ -173,13 +148,13 @@ Every decision for this feature maps to an ADR. ADR-001 is the hosting prerequis
 - **ADRs:** [ADR-005](../adr/ADR-005.md), [ADR-006](../adr/ADR-006.md), [ADR-010](../adr/ADR-010.md)
 - **Notes:** Do not enable SpeechBrain until Phase 10. See [Phase 9 live smoke](#phase-9-live-smoke-runbook) below.
 
-### Phase 10 — SpeechBrain LID (live multilingual)
+### Phase 10 - SpeechBrain LID (live multilingual)
 
 - **Goal:** Real audio language-ID on the same port; Fixed LID remains fallback.
 - **Delivered:** `SpeechBrainLanguageIdentifier` (VoxLingua107 ECAPA); `requirements-ivr-lid.txt`; Windows `inspect.py` path patch; log-prob→confidence; LID warmup; live handset speech as definitive test.
 - **Tests:** `test_lid.py`, `manual_verify_lid.py --try-speechbrain`, live call
 - **ADRs:** [ADR-006](../adr/ADR-006.md), [ADR-010](../adr/ADR-010.md)
-- **Notes:** English SAPI reading French text is **not** a French LID test — speak French on the handset. See [Phase 10 live](#phase-10-live-speechbrain-runbook) below.
+- **Notes:** English SAPI reading French text is **not** a French LID test - speak French on the handset. See [Phase 10 live](#phase-10-live-speechbrain-runbook) below.
 
 ---
 
@@ -187,7 +162,7 @@ Every decision for this feature maps to an ADR. ADR-001 is the hosting prerequis
 
 | Issue | Fix | ADRs |
 |-------|-----|------|
-| Choppy / stuttering TTS with realtime frame pacing | Default `IVR_PLAYBACK_REALTIME=false` — burst enqueue into Twilio buffer | ADR-005 |
+| Choppy / stuttering TTS with realtime frame pacing | Default `IVR_PLAYBACK_REALTIME=false` - burst enqueue into Twilio buffer | ADR-005 |
 | Cold SAPI ~2–3s before first prompt | Disk/memory TTS cache + startup warmup | ADR-005 |
 | DTMF registered but menu kept repeating / did not stop | Listen for `(mulaw_bytes/8000)+silence_timeout` after burst; Twilio `clear` on digit/selection | ADR-005, ADR-007 |
 | Barge-in LID wrong (French → `br`; earlier English → `lb`) | Clear on VAD `speech_start` during barge-in; `prefer_major_language_from_topk` | ADR-009 |
@@ -245,7 +220,7 @@ IVR_PLAYBACK_REALTIME=false
 
 ### Pass checklist (all must be true)
 
-1. Trial “press any key” gate (if trial account) — expected
+1. Trial “press any key” gate (if trial account) - expected
 2. Server log: `Playing prompt … bytes=…` (bytes > 0)
 3. You **hear** a spoken prompt (not silence; not only beeps unless tone stub intentional)
 4. Speak **or** press a listed digit → `language_selected` / metrics `outcome=selected`
@@ -261,7 +236,7 @@ IVR_PLAYBACK_REALTIME=false
 | Silence after connect | Prompt not played / zero bytes |
 | Speech ignored, DTMF works | Expected with `force=en` if you speak another language |
 | WebSocket never starts | Webhook URL / ngrok / `wss` host mismatch |
-| Trial message only | Twilio trial — press a key, then continue |
+| Trial message only | Twilio trial - press a key, then continue |
 
 ---
 
@@ -269,7 +244,7 @@ IVR_PLAYBACK_REALTIME=false
 
 Upgrade from Fixed/dev LID to **real** audio language-ID. Fixed LID remains fallback when SpeechBrain is unavailable or forced off.
 
-**Definitive test:** speak the language **yourself** on the phone. Do **not** use multilingual SAPI / downloaded voices / French text read by English TTS — those test the synthesizer accent, not LID.
+**Definitive test:** speak the language **yourself** on the phone. Do **not** use multilingual SAPI / downloaded voices / French text read by English TTS - those test the synthesizer accent, not LID.
 
 ### Env (`.env`)
 
@@ -303,7 +278,7 @@ Then: uvicorn + public webhook (ngrok), dial the number. After the prompt, speak
 - metrics `outcome=selected`
 - clean hangup (`STOP`)
 
-DTMF remains fallback if speech LID is unclear. Prompt may still be English SAPI — that only affects what you hear, not what you speak.
+DTMF remains fallback if speech LID is unclear. Prompt may still be English SAPI - that only affects what you hear, not what you speak.
 
 ### Offline wiring only (not multilingual proof)
 
@@ -318,12 +293,12 @@ Contract tests may use a fake classifier. Multilingual acceptance = live handset
 
 ## Empirical notes (live debugging)
 
-Not a formal load suite — observed on handset:
+Not a formal load suite - observed on handset:
 
 | Observation | Detail |
 |-------------|--------|
 | Warm prompt start | Cached SAPI → Twilio: ~few hundred ms after stream start (vs cold SAPI 2–3s) |
-| Clear English barge-in | LID `en` ~0.96 confidence — accepted |
+| Clear English barge-in | LID `en` ~0.96 confidence - accepted |
 | French barge-in (pre-remap) | Raw top `br` ~0.52, `fr` #2 ~0.29 → remapped to `fr` ([ADR-009](../adr/ADR-009.md)) |
 | DTMF menu repeat | Digits registered but menu repeated until listen-duration + Twilio `clear` fixed |
 | Menu contamination | Twilio `clear` must run on barge-in `speech_start`, not only after utterance end |

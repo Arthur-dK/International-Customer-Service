@@ -42,7 +42,7 @@ from services.ivr.tts import (  # noqa: E402
 
 def _ok(label: str, condition: bool, detail: str = "") -> bool:
     mark = "PASS" if condition else "FAIL"
-    suffix = f" — {detail}" if detail else ""
+    suffix = f" - {detail}" if detail else ""
     print(f"  [{mark}] {label}{suffix}")
     return condition
 
@@ -150,7 +150,7 @@ def main() -> int:
             checks.append(_ok("IVR_STT_SCRIPT queued for live turns", True, ",".join(script)))
         else:
             print(
-                "  [WARN] IVR_STT_SCRIPT empty — after the menu, speech plays "
+                "  [WARN] IVR_STT_SCRIPT empty - after the menu, speech plays "
                 "'did not catch that' (still a canned TTFB check). "
                 "Set IVR_STT_SCRIPT=balance to hear the fake-balance line, "
                 "or IVR_STT_BACKEND=sapi for Phase 8."
@@ -180,7 +180,7 @@ def main() -> int:
             _ok(
                 "TTS is spoken (not tone stub)",
                 False,
-                f"{tts_name} — callers will hear beeps only",
+                f"{tts_name} - callers will hear beeps only",
             )
         )
     else:
@@ -189,7 +189,7 @@ def main() -> int:
         )
     if phase_label == "7b" and "*" not in spoken and "fr" not in spoken:
         print(
-            "  [WARN] No French voice — selecting French plays English until you add "
+            "  [WARN] No French voice - selecting French plays English until you add "
             "a Windows French speech pack or Piper fr_*.onnx"
         )
 
@@ -203,7 +203,7 @@ def main() -> int:
                 isinstance(lid, SpeechBrainLanguageIdentifier),
                 lid_name
                 + (
-                    " — falling back until deps install"
+                    " - falling back until deps install"
                     if isinstance(lid, FixedLanguageIdentifier)
                     else ""
                 ),
@@ -218,22 +218,22 @@ def main() -> int:
     )
     print("\nTwilio credentials (needed for the live number, not for this script)")
     if twilio_configured:
-        print("  [PASS] TWILIO_* look configured — present")
+        print("  [PASS] TWILIO_* look configured - present")
     else:
-        print("  [WARN] TWILIO_* still mock/empty — set real values in .env before dialing")
+        print("  [WARN] TWILIO_* still mock/empty - set real values in .env before dialing")
 
     print("\nLive checklist (you verify on the call)")
     if phase == 8:
-        print("  1. Trial 'press any key' if trial account — expected")
+        print("  1. Trial 'press any key' if trial account - expected")
         print("  2. Hear language-selection prompt, then select (DTMF or speech)")
         print("  3. Log: language_selected ... then hear the task menu")
         print("  4. Say 'balance' (or 'solde' in French), then pause")
         print("  5. Hear the fake-balance line. Log: grammar_stt ... text='balance'")
-        print("  6. ttfb_ms may be over 500 (includes Windows recognition) — expected")
+        print("  6. ttfb_ms may be over 500 (includes Windows recognition) - expected")
         print("  7. Hangup -> STOP, no crash spam")
         print("\nRunbook: docs/ivr/features/FEAT-03.md (Phase 8 live grammar STT)")
     elif phase == 7:
-        print("  1. Trial 'press any key' if trial account — expected")
+        print("  1. Trial 'press any key' if trial account - expected")
         print("  2. Hear language-selection prompt, then select (DTMF or speech)")
         print("  3. Log: language_selected ... then hear the task menu")
         print("  4. Speak, then pause - hear canned reply (balance if IVR_STT_SCRIPT=balance,")
@@ -242,12 +242,12 @@ def main() -> int:
         print("  6. Optional 2nd call: French if TTS spoken languages includes fr")
         print("  7. Hangup -> STOP, no crash spam")
         if phase_label == "7b":
-            print("  8. French selection: real French speech OR clear English — never English-accented French")
+            print("  8. French selection: real French speech OR clear English - never English-accented French")
             print("\nRunbook: docs/ivr/features/FEAT-03.md (Phase 7b TTS voice matching)")
         else:
             print("\nRunbook: docs/ivr/features/FEAT-03.md (Phase 7 live smoke)")
     elif phase == 9:
-        print("  1. Trial 'press any key' if trial account — expected")
+        print("  1. Trial 'press any key' if trial account - expected")
         print("  2. Log: Playing prompt … bytes=… (bytes > 0)")
         print("  3. Hear spoken prompt (not silence / not only beeps)")
         print("  4. Speak or press digit -> language_selected / outcome=selected")
@@ -255,7 +255,7 @@ def main() -> int:
         print("\nRunbook: docs/ivr/features/FEAT-02.md (Phase 9 live smoke)")
     else:
         print("  1. Prompt plays (English TTS is fine for the prompt only)")
-        print("  2. YOU speak French (or another language) on the handset — not SAPI")
+        print("  2. YOU speak French (or another language) on the handset - not SAPI")
         print("  3. Log: language_selected language=<spoken> with SpeechBrain (not fixed)")
         print("  4. Optional: DTMF still selects if speech fails")
         print("  5. Hangup -> STOP, no crash spam")

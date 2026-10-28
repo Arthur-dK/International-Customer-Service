@@ -1,4 +1,4 @@
-# FEAT-01 — Twilio Media Stream audio pipeline
+# FEAT-01 - Twilio Media Stream audio pipeline
 
 | | |
 |---|---|
@@ -6,9 +6,11 @@
 | **Name** | Twilio Voice webhook and real-time μ-law Media Stream |
 | **Branch** | `feat/ivr-twilio-websocket` |
 | **Status** | Implemented |
-| **Target** | High-level IVR setup and a real-time bidirectional audio pipeline |
+| **Target** | Twilio Voice webhook and a real-time bidirectional μ-law stream |
 
-This is the foundation feature: FastAPI hosts Twilio Voice, opens a Media Stream WebSocket, and moves 8 kHz μ-law audio on asyncio queues without blocking the event loop. Language selection is [FEAT-02](FEAT-02.md). Latency / canned turns are [FEAT-03](FEAT-03.md).
+What a caller should hear is [the phone requirements](../../../requirements/ivr_requirements.md). This note is the build log.
+
+FastAPI hosts Twilio Voice, opens a Media Stream WebSocket, and moves 8 kHz μ-law audio on asyncio queues without blocking the event loop. Language selection is [FEAT-02](FEAT-02.md). Latency / canned turns are [FEAT-03](FEAT-03.md). Caller-facing tasks are [FEAT-04](FEAT-04.md).
 
 Architectural decisions: [ADR-001](../adr/ADR-001.md), [ADR-003](../adr/ADR-003.md).
 
@@ -24,19 +26,6 @@ Hook Twilio call audio into this service so later IVR logic can run on the same 
 - Parse incoming Twilio WebSocket payloads (`connected`, `start`, `media`, `dtmf`, `stop`) and keep a bidirectional 8 kHz μ-law stream.
 - In-memory `asyncio.Queue` buffers for inbound and outbound audio so receive, send, and call logic can run concurrently without blocking the main event loop.
 - Incoming Voice webhook returns TwiML that `<Connect>`s that stream (so a real call can attach).
-
----
-
-## User experience
-
-This feature keeps the answered call on a live two-way audio connection. Speech from the caller and speech from the system share that connection for the rest of the call. It does not choose a language or offer card tasks.
-
-### Try this
-
-Each line should work on a call from a number that is allowed through. Anything not listed is not part of this feature.
-
-- The call stays connected while you listen and while you speak.
-- You hear the system on that live connection. You are not played one recording of a finished script and then disconnected.
 
 ---
 

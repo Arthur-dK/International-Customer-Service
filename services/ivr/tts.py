@@ -350,7 +350,7 @@ def build_default_tts(
             )
     if not backends:
         logger.warning(
-            "No speech TTS configured — using tone stub. "
+            "No speech TTS configured - using tone stub. "
             "Callers will hear beeps, not words. Install Piper or use Windows SAPI."
         )
         backends.append(ToneTextToSpeech())
